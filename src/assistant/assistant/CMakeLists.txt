@@ -159,7 +159,7 @@ if(UNIX)
     )
 endif()
 
-qt_internal_extend_target(assistant CONDITION UNIX
+qt_internal_extend_target(assistant CONDITION (UNIX OR OS2)
     SOURCES
         stdinlistener.cpp stdinlistener.h
 )
