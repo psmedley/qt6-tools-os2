@@ -48,7 +48,7 @@ class FMT {
 static QString qtToolFilePath(const QString &toolName, QLibraryInfo::LibraryPath location)
 {
     QString filePath = QLibraryInfo::path(location) + QLatin1Char('/') + toolName;
-#ifdef Q_OS_WIN
+#ifdef Q_OS_DOSLIKE
     filePath.append(QLatin1String(".exe"));
 #endif
     return QDir::cleanPath(filePath);
@@ -95,7 +95,7 @@ void runQtTool(const QString &toolName, const QStringList &arguments,
     const QString commandLine = commandLineForSystem(qtToolFilePath(toolName, location), arguments);
 #if defined(Q_OS_WIN)
     exitCode = _wsystem(reinterpret_cast<const wchar_t *>(commandLine.utf16()));
-#elif defined(Q_OS_UNIX)
+#elif defined(Q_OS_UNIXLIKE)
     int ret = std::system(qPrintable(commandLine));
     exitCode = WEXITSTATUS(ret);
 #else

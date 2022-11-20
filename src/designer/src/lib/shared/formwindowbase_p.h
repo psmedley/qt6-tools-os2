@@ -152,7 +152,7 @@ public:
         LFLineTerminator,
         CRLFLineTerminator,
         NativeLineTerminator =
-#if defined (Q_OS_WIN)
+#if defined (Q_OS_DOSLIKE)
             CRLFLineTerminator
 #else
             LFLineTerminator

@@ -317,7 +317,7 @@ void QHelpProjectDataPrivate::addMatchingFiles(const QString &pattern)
         dirEntriesCache.insert(path, entries);
 
     bool matchFound = false;
-#ifdef Q_OS_WIN
+#ifdef Q_OS_DOSLIKE
     auto cs = QRegularExpression::CaseInsensitiveOption;
 #else
     auto cs = QRegularExpression::NoPatternOption;
