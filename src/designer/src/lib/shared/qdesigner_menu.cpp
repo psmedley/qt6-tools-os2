@@ -224,7 +224,7 @@ bool QDesignerMenu::handleKeyPressEvent(QWidget * /*widget*/, QKeyEvent *e)
             break;
 
         case Qt::Key_PageDown:
-            m_currentIndex = actions().count() - 1;
+            m_currentIndex = actions().size() - 1;
             break;
 
         case Qt::Key_Enter:
@@ -794,7 +794,7 @@ void QDesignerMenu::dropEvent(QDropEvent *event)
     if (action && checkAction(action) == AcceptActionDrag) {
         event->acceptProposedAction();
         int index = findAction(event->position().toPoint());
-        index = qMin(index, actions().count() - 1);
+        index = qMin(index, actions().size() - 1);
 
         fw->beginCommand(tr("Insert action"));
         InsertActionIntoCommand *cmd = new InsertActionIntoCommand(fw);
@@ -924,7 +924,7 @@ void QDesignerMenu::moveUp(bool ctrl)
 
 void QDesignerMenu::moveDown(bool ctrl)
 {
-    if (m_currentIndex == actions().count() - 1) {
+    if (m_currentIndex == actions().size() - 1) {
         return;
     }
 
@@ -932,7 +932,7 @@ void QDesignerMenu::moveDown(bool ctrl)
         (void) swap(m_currentIndex + 1, m_currentIndex);
 
     ++m_currentIndex;
-    m_currentIndex = qMin(actions().count() - 1, m_currentIndex);
+    m_currentIndex = qMin(actions().size() - 1, m_currentIndex);
     update();
     if (!ctrl)
         selectCurrentAction();
@@ -940,7 +940,7 @@ void QDesignerMenu::moveDown(bool ctrl)
 
 QAction *QDesignerMenu::currentAction() const
 {
-    if (m_currentIndex < 0 || m_currentIndex >= actions().count())
+    if (m_currentIndex < 0 || m_currentIndex >= actions().size())
         return nullptr;
 
     return safeActionAt(m_currentIndex);
@@ -948,7 +948,7 @@ QAction *QDesignerMenu::currentAction() const
 
 int QDesignerMenu::realActionCount() const
 {
-    return actions().count() - 2; // 2 fake actions
+    return actions().size() - 2; // 2 fake actions
 }
 
 void QDesignerMenu::selectCurrentAction()
@@ -1035,16 +1035,15 @@ QDesignerMenu *QDesignerMenu::findOrCreateSubMenu(QAction *action)
 
 bool QDesignerMenu::canCreateSubMenu(QAction *action) const // ### improve it's a bit too slow
 {
-    const QWidgetList &associatedWidgets = action->associatedWidgets();
-    for (const QWidget *aw : associatedWidgets) {
-        if (aw != this) {
-            if (const QMenu *m = qobject_cast<const QMenu *>(aw)) {
+    const QObjectList associatedObjects = action->associatedObjects();
+    for (const QObject *ao : associatedObjects) {
+        if (ao != this) {
+            if (const QMenu *m = qobject_cast<const QMenu *>(ao)) {
                 if (m->actions().contains(action))
                     return false; // sorry
-            } else {
-                if (const QToolBar *tb = qobject_cast<const QToolBar *>(aw))
-                    if (tb->actions().contains(action))
-                        return false; // sorry
+            } else if (const QToolBar *tb = qobject_cast<const QToolBar *>(ao)) {
+                if (tb->actions().contains(action))
+                    return false; // sorry
             }
         }
     }
@@ -1299,7 +1298,7 @@ bool QDesignerMenu::swap(int a, int b)
 
 QAction *QDesignerMenu::safeActionAt(int index) const
 {
-    if (index < 0 || index >= actions().count())
+    if (index < 0 || index >= actions().size())
         return nullptr;
 
     return actions().at(index);

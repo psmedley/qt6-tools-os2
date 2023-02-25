@@ -144,6 +144,8 @@ void CppCodeParser::initializeParser()
         m_exampleImageFilter = exampleImagePatterns.join(' ');
     else
         m_exampleImageFilter = "*.png";
+
+    m_showLinkErrors = !config.getBool(CONFIG_NOLINKERRORS);
 }
 
 /*!
@@ -446,7 +448,8 @@ void CppCodeParser::processQmlProperties(const Doc &doc, NodeList &nodes, DocLis
                     if (!doc.body().isEmpty()) {
                         doc.startLocation().warning(
                                 QStringLiteral("QML property documented multiple times: '%1'")
-                                        .arg(arg));
+                                        .arg(arg), QStringLiteral("also seen here: %1")
+                                                .arg(existingProperty->location().toString()));
                     }
                     continue;
                 }
@@ -595,11 +598,16 @@ void CppCodeParser::processMetaCommand(const Doc &doc, const QString &command,
             ClassNode *classNode = m_qdb->findClassNode(arg.split("::"));
             if (classNode)
                 node->setClassNode(classNode);
-            else
+            else if (m_showLinkErrors) {
                 doc.location().warning(
-                        QStringLiteral("C++ class %1 not found: \\instantiates %1").arg(arg));
-        } else
-            doc.location().warning(QStringLiteral("\\instantiates is only allowed in \\qmltype"));
+                        QStringLiteral("C++ class %2 not found: \\%1 %2")
+                                .arg(command, arg));
+            }
+        } else {
+            doc.location().warning(
+                    QStringLiteral("\\%1 is only allowed in \\%2")
+                            .arg(command, COMMAND_QMLTYPE));
+        }
     } else if (command == COMMAND_DEFAULT) {
         if (!node->isQmlProperty()) {
             doc.location().warning(QStringLiteral("Ignored '\\%1', applies only to '\\%2'")
@@ -802,8 +810,9 @@ FunctionNode *CppCodeParser::parseMacroArg(const Location &location, const QStri
     macro->setReturnType(returnType);
     macro->setParameters(params);
     if (macro->compare(oldMacroNode)) {
-        location.warning(QStringLiteral("\\macro %1 documented more than once").arg(macroArg));
-        oldMacroNode->doc().location().warning(QStringLiteral("(The previous doc is here)"));
+        location.warning(QStringLiteral("\\macro %1 documented more than once")
+                .arg(macroArg), QStringLiteral("also seen here: %1")
+                        .arg(oldMacroNode->doc().location().toString()));
     }
     return macro;
 }

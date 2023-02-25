@@ -196,12 +196,13 @@ set(lupdate_sources \"${sources}\")
 set(lupdate_translations \"${ts_files}\")
 ")
 
+    _qt_internal_wrap_tool_command(lupdate_command SET
+        $<TARGET_FILE:${QT_CMAKE_EXPORT_NAMESPACE}::lupdate>)
     add_custom_target(${target}_lupdate
         COMMAND "${CMAKE_COMMAND}" "-DIN_FILE=${lupdate_project_cmake}"
                 "-DOUT_FILE=${lupdate_project_json}"
                 -P "${_Qt6_LINGUIST_TOOLS_DIR}/GenerateLUpdateProject.cmake"
-        COMMAND ${QT_CMAKE_EXPORT_NAMESPACE}::lupdate -project "${lupdate_project_json}"
-                ${arg_OPTIONS}
+        ${lupdate_command} -project "${lupdate_project_json}" ${arg_OPTIONS}
         DEPENDS ${QT_CMAKE_EXPORT_NAMESPACE}::lupdate
         VERBATIM)
 
@@ -229,6 +230,11 @@ function(qt6_add_lrelease target)
     cmake_parse_arguments(arg "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
     qt_internal_make_paths_absolute(ts_files "${arg_TS_FILES}")
 
+    _qt_internal_wrap_tool_command(lupdate_command SET
+        $<TARGET_FILE:${QT_CMAKE_EXPORT_NAMESPACE}::lupdate>)
+    _qt_internal_wrap_tool_command(lrelease_command SET
+        $<TARGET_FILE:${QT_CMAKE_EXPORT_NAMESPACE}::lrelease>)
+
     set(qm_files "")
     foreach(ts_file ${ts_files})
         if(NOT EXISTS "${ts_file}")
@@ -239,7 +245,8 @@ function(qt6_add_lrelease target)
             # Provide a command that creates an initial .ts file with the right language set.
             # The language is guessed by lupdate from the file name.
             add_custom_command(OUTPUT ${ts_file}
-                COMMAND ${QT_CMAKE_EXPORT_NAMESPACE}::lupdate -ts ${ts_file}
+                ${lupdate_command} -ts ${ts_file}
+                DEPENDS ${QT_CMAKE_EXPORT_NAMESPACE}::lupdate
                 VERBATIM)
         endif()
         get_filename_component(qm ${ts_file} NAME_WLE)
@@ -256,11 +263,22 @@ function(qt6_add_lrelease target)
             string(PREPEND qm "${CMAKE_CURRENT_BINARY_DIR}/")
         endif()
         add_custom_command(OUTPUT ${qm}
-            COMMAND ${QT_CMAKE_EXPORT_NAMESPACE}::lrelease
-            ${arg_OPTIONS} ${ts_file} -qm ${qm}
-            DEPENDS ${QT_CMAKE_EXPORT_NAMESPACE}::lrelease ${ts_file}
+            ${lrelease_command} ${arg_OPTIONS} ${ts_file} -qm ${qm}
+            DEPENDS ${QT_CMAKE_EXPORT_NAMESPACE}::lrelease "${ts_file}"
             VERBATIM)
         list(APPEND qm_files "${qm}")
+
+        # QTBUG-103470: Save the target responsible for driving the build of the custom command
+        # into an internal source file property. It will be added as a dependency for targets
+        # created by _qt_internal_process_resource, to avoid the Xcode issue of not allowing
+        # multiple targets depending on the output, without having a common target ancestor.
+        set(scope_args)
+        if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.18")
+            set(scope_args TARGET_DIRECTORY ${target})
+        endif()
+        set_source_files_properties("${qm}" ${scope_args} PROPERTIES
+            _qt_resource_target_dependency "${target}_lrelease"
+        )
     endforeach()
 
     add_custom_target(${target}_lrelease DEPENDS ${qm_files})
@@ -322,7 +340,7 @@ function(qt6_add_translations target)
         QM_FILES_OUTPUT_VARIABLE qm_files
         OPTIONS "${arg_LRELEASE_OPTIONS}")
     if(NOT "${arg_RESOURCE_PREFIX}" STREQUAL "")
-        qt6_add_resources(${target} "translations"
+        qt6_add_resources(${target} "${target}_translations"
             PREFIX "${arg_RESOURCE_PREFIX}"
             BASE "${CMAKE_CURRENT_BINARY_DIR}"
             OUTPUT_TARGETS out_targets

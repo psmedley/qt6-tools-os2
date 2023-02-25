@@ -166,6 +166,14 @@ backslashed \ stuff.</source>
     </message>
 </context>
 <context>
+    <name>Hogus</name>
+    <message>
+        <location filename="main.cpp" line="700"/>
+        <source>this should be in Hogus</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>Internal::Message</name>
     <message>
         <location filename="main.cpp" line="283"/>
@@ -410,6 +418,19 @@ backslashed \ stuff.</source>
     <message>
         <location filename="included.cpp" line="30"/>
         <source>message from #included .cpp file</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>QTBUG99415</name>
+    <message>
+        <location filename="main.cpp" line="707"/>
+        <source>text1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="main.cpp" line="711"/>
+        <source>text2</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

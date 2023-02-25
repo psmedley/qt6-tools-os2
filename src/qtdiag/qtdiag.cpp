@@ -320,6 +320,12 @@ void dumpRhiBackendInfo(QTextStream &str, const char *name, QRhi::Implementation
         { "IntAttributes", QRhi::IntAttributes },
         { "ScreenSpaceDerivatives", QRhi::ScreenSpaceDerivatives },
         { "ReadBackAnyTextureFormat", QRhi::ReadBackAnyTextureFormat },
+        { "PipelineCacheDataLoadSave", QRhi::PipelineCacheDataLoadSave },
+        { "ImageDataStride", QRhi::ImageDataStride },
+        { "RenderBufferImport", QRhi::RenderBufferImport },
+        { "ThreeDimensionalTextures", QRhi::ThreeDimensionalTextures },
+        { "RenderTo3DTextureSlice", QRhi::RenderTo3DTextureSlice },
+        { "TextureArrays", QRhi::TextureArrays },
 
         { nullptr, QRhi::Feature(0) }
     };
@@ -381,6 +387,8 @@ void dumpRhiBackendInfo(QTextStream &str, const char *name, QRhi::Implementation
         str << "  MaxThreadGroupX: " << rhi->resourceLimit(QRhi::MaxThreadGroupX) << "\n";
         str << "  MaxThreadGroupY: " << rhi->resourceLimit(QRhi::MaxThreadGroupY) << "\n";
         str << "  MaxThreadGroupZ: " << rhi->resourceLimit(QRhi::MaxThreadGroupZ) << "\n";
+        str << "  TextureArraySizeMax: " << rhi->resourceLimit(QRhi::TextureArraySizeMax) << "\n";
+        str << "  MaxUniformBufferRange: " << rhi->resourceLimit(QRhi::MaxUniformBufferRange) << "\n";
         str << "  Uniform Buffer Alignment: " << rhi->ubufAlignment() << "\n";
         QByteArrayList supportedSampleCounts;
         for (int s : rhi->supportedSampleCounts())
@@ -704,10 +712,13 @@ QString qtDiag(unsigned flags)
         << "  showIsMaximized: " << styleHints->showIsMaximized() << '\n'
         << "  passwordMaskDelay: " << styleHints->passwordMaskDelay() << '\n'
         << "  passwordMaskCharacter: ";
-    if (passwordMaskCharacter.unicode() >= 32 && passwordMaskCharacter.unicode() < 128)
+    const int passwordMaskCharacterUc = passwordMaskCharacter.unicode();
+    if (passwordMaskCharacterUc >= 32 && passwordMaskCharacterUc < 128) {
         str << '\'' << passwordMaskCharacter << '\'';
-    else
-        str << "U+" << qSetFieldWidth(4) << qSetPadChar('0') << Qt::uppercasedigits << Qt::hex << passwordMaskCharacter.unicode() << Qt::dec << qSetFieldWidth(0);
+    } else {
+        str << "U+" << qSetFieldWidth(4) << qSetPadChar('0') << Qt::uppercasedigits << Qt::hex
+            << passwordMaskCharacterUc << Qt::dec << qSetFieldWidth(0);
+    }
     str << '\n'
         << "  fontSmoothingGamma: " << styleHints->fontSmoothingGamma() << '\n'
         << "  useRtlExtensions: " << styleHints->useRtlExtensions() << '\n'

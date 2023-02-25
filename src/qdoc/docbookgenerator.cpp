@@ -1483,10 +1483,9 @@ void DocBookGenerator::generateHeader(const QString &title, const QString &subTi
         bool generatedSomething = false;
 
         Text brief;
-        const NamespaceNode *ns = node->isAggregate()
-                ? static_cast<const NamespaceNode *>(static_cast<const Aggregate *>(node))
-                : nullptr;
-        if (node->isAggregate() && ns && !ns->hasDoc() && ns->docNode()) {
+        const NamespaceNode *ns =
+                node->isNamespace() ? static_cast<const NamespaceNode *>(node) : nullptr;
+        if (ns && !ns->hasDoc() && ns->docNode()) {
             NamespaceNode *NS = ns->docNode();
             brief << "The " << ns->name()
                   << " namespace includes the following elements from module "
@@ -1801,8 +1800,8 @@ void DocBookGenerator::generateRequisites(const Aggregate *aggregate)
                     m_qdb->getCollectionNode(aggregate->physicalModuleName(), Node::Module);
             if (cn && !cn->qtCMakeComponent().isEmpty()) {
                 const QString qtComponent = "Qt" + QString::number(QT_VERSION_MAJOR);
-                const QString findpackageText = "find_package(" + qtComponent + " COMPONENTS "
-                        + cn->qtCMakeComponent() + " REQUIRED)";
+                const QString findpackageText = "find_package(" + qtComponent
+                        + " REQUIRED COMPONENTS " + cn->qtCMakeComponent() + ")";
                 const QString targetLinkLibrariesText = "target_link_libraries(mytarget PRIVATE "
                         + qtComponent + "::" + cn->qtCMakeComponent() + ")";
                 const QStringList cmakeInfo { findpackageText, targetLinkLibrariesText };
@@ -2836,7 +2835,7 @@ void DocBookGenerator::generateDocBookSynopsis(const Node *node)
                 if (cn && !cn->qtCMakeComponent().isEmpty()) {
                     const QString qtComponent = "Qt" + QString::number(QT_VERSION_MAJOR);
                     const QString findpackageText = "find_package(" + qtComponent
-                            + " COMPONENTS " + cn->qtCMakeComponent() + " REQUIRED)";
+                            + " REQUIRED COMPONENTS " + cn->qtCMakeComponent() + ")";
                     const QString targetLinkLibrariesText =
                             "target_link_libraries(mytarget PRIVATE " + qtComponent + "::" + cn->qtCMakeComponent()
                             + ")";

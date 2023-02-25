@@ -688,3 +688,24 @@ void testing::test() {    static const char * const test_string_n3[] = {
         QT_TR_N_NOOP("%n test")
     };
 }
+
+
+
+// QTBUG-91521: context in static initializers with parentheses
+class Hogus : QObject {
+    Q_OBJECT
+    static const QString myString;
+};
+
+const QString Hogus::myString(QT_TR_NOOP("this should be in Hogus"));
+
+
+
+// QTBUG-99415: multiple specifiers after method parameter list
+class QTBUG99415 : QObject {
+    Q_OBJECT
+    const QString text1() const noexcept { return tr("text1"); }
+    const QString text2() const noexcept;
+};
+
+const QString QTBUG99415::text2() const noexcept { return tr("text2"); }
