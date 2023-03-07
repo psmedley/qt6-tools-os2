@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2021 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the tools applications of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2021 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "cppcodeparser.h"
 
@@ -74,7 +49,8 @@ CppCodeParser::CppCodeParser()
                        << COMMAND_QMLPROPERTYGROUP // mws 13/03/2019
                        << COMMAND_QMLATTACHEDPROPERTY << COMMAND_QMLSIGNAL
                        << COMMAND_QMLATTACHEDSIGNAL << COMMAND_QMLMETHOD
-                       << COMMAND_QMLATTACHEDMETHOD << COMMAND_QMLBASICTYPE << COMMAND_QMLMODULE
+                       << COMMAND_QMLATTACHEDMETHOD << COMMAND_QMLVALUETYPE << COMMAND_QMLBASICTYPE
+                       << COMMAND_QMLMODULE
                        << COMMAND_JSTYPE << COMMAND_JSPROPERTY
                        << COMMAND_JSPROPERTYGROUP // mws 13/03/2019
                        << COMMAND_JSATTACHEDPROPERTY << COMMAND_JSSIGNAL << COMMAND_JSATTACHEDSIGNAL
@@ -335,12 +311,12 @@ Node *CppCodeParser::processTopicCommand(const Doc &doc, const QString &command,
             qcn = new QmlTypeNode(m_qdb->primaryTreeRoot(), arg.first, Node::JsType);
         qcn->setLocation(doc.startLocation());
         return qcn;
-    } else if (command == COMMAND_QMLBASICTYPE) {
-        auto *node = new QmlBasicTypeNode(m_qdb->primaryTreeRoot(), arg.first);
+    } else if (command == COMMAND_QMLVALUETYPE || command == COMMAND_QMLBASICTYPE) {
+        auto *node = new QmlValueTypeNode(m_qdb->primaryTreeRoot(), arg.first);
         node->setLocation(doc.startLocation());
         return node;
     } else if (command == COMMAND_JSBASICTYPE) {
-        auto *node = new QmlBasicTypeNode(m_qdb->primaryTreeRoot(), arg.first, Node::JsBasicType);
+        auto *node = new QmlValueTypeNode(m_qdb->primaryTreeRoot(), arg.first, Node::JsBasicType);
         node->setLocation(doc.startLocation());
         return node;
     } else if ((command == COMMAND_QMLSIGNAL) || (command == COMMAND_QMLMETHOD)
@@ -471,8 +447,8 @@ void CppCodeParser::processQmlProperties(const Doc &doc, NodeList &nodes, DocLis
     // valid nodes. Note that it's important to do this *after* constructing
     // the topic nodes - which need to be written to index before the related
     // scn.
-    if (sharedNodes.count() > 1) {
-        auto *scn = new SharedCommentNode(qmlType, sharedNodes.count(), group);
+    if (sharedNodes.size() > 1) {
+        auto *scn = new SharedCommentNode(qmlType, sharedNodes.size(), group);
         scn->setLocation(doc.startLocation());
         nodes.append(scn);
         docs.append(doc);
@@ -721,7 +697,7 @@ FunctionNode *CppCodeParser::parseOtherFuncArg(const QString &topic, const Locat
     qsizetype firstBlank = funcName.indexOf(QChar(' '));
     if (firstBlank > 0) {
         returnType = funcName.left(firstBlank);
-        funcName = funcName.right(funcName.length() - firstBlank - 1);
+        funcName = funcName.right(funcName.size() - firstBlank - 1);
     }
 
     QStringList colonSplit(funcName.split("::"));
@@ -795,7 +771,7 @@ FunctionNode *CppCodeParser::parseMacroArg(const Location &location, const QStri
             params = afterParen.left(rightParen);
     }
     int i = 0;
-    while (i < macroName.length() && !macroName.at(i).isLetter())
+    while (i < macroName.size() && !macroName.at(i).isLetter())
         i++;
     if (i > 0) {
         returnType += QChar(' ') + macroName.left(i);
@@ -940,7 +916,7 @@ void CppCodeParser::processTopicArgs(const Doc &doc, const QString &topic, NodeL
             }
         } else if (args.size() > 1) {
             QList<SharedCommentNode *> sharedCommentNodes;
-            for (const auto &arg : qAsConst(args)) {
+            for (const auto &arg : std::as_const(args)) {
                 node = nullptr;
                 if (topic == COMMAND_FN) {
                     if (showInternal() || !doc.isInternal())
@@ -1004,7 +980,7 @@ void CppCodeParser::processMetaCommands(NodeList &nodes, DocList &docs)
 bool CppCodeParser::hasTooManyTopics(const Doc &doc) const
 {
     const QSet<QString> topicCommandsUsed = topicCommands() & doc.metaCommandsUsed();
-    if (topicCommandsUsed.count() > 1) {
+    if (topicCommandsUsed.size() > 1) {
         bool ok = true;
         for (const auto &t : topicCommandsUsed) {
             if (!t.startsWith(QLatin1String("qml")) && !t.startsWith(QLatin1String("js")))

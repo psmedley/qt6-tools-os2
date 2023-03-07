@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2020 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Linguist of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2020 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 /*  TRANSLATOR MainWindow
 
@@ -131,7 +106,7 @@ static Ending ending(QString str, QLocale::Language lang)
     if (str.isEmpty())
         return End_None;
 
-    switch (str.at(str.length() - 1).unicode()) {
+    switch (str.at(str.size() - 1).unicode()) {
     case 0x002e: // full stop
         if (str.endsWith(QLatin1String("...")))
             return End_Ellipsis;
@@ -275,10 +250,6 @@ MainWindow::MainWindow()
     : QMainWindow(0, Qt::Window),
       m_assistantProcess(0),
       m_printer(0),
-      m_findMatchCase(Qt::CaseInsensitive),
-      m_findIgnoreAccelerators(true),
-      m_findSkipObsolete(false),
-      m_findUseRegExp(false),
       m_findWhere(DataModel::NoLocation),
       m_translationSettingsDialog(0),
       m_settingCurrentMessage(false),
@@ -573,6 +544,7 @@ void MainWindow::modelCountChanged()
 
     m_ui.actionFind->setEnabled(m_dataModel->contextCount() > 0);
     m_ui.actionFindNext->setEnabled(false);
+    m_ui.actionFindPrev->setEnabled(false);
 
     m_formPreviewView->setSourceContext(-1, 0);
 }
@@ -652,7 +624,7 @@ bool MainWindow::openFiles(const QStringList &names, bool globalReadWrite)
                 {
                     case QMessageBox::Cancel:
                         delete dm;
-                        for (const OpenedFile &op : qAsConst(opened))
+                        for (const OpenedFile &op : std::as_const(opened))
                             delete op.dataModel;
                         return false;
                     case QMessageBox::Yes:
@@ -672,13 +644,13 @@ bool MainWindow::openFiles(const QStringList &names, bool globalReadWrite)
             waitCursor = false;
         }
         if (!closeAll()) {
-            for (const OpenedFile &op : qAsConst(opened))
+            for (const OpenedFile &op : std::as_const(opened))
                 delete op.dataModel;
             return false;
         }
     }
 
-    for (const OpenedFile &op : qAsConst(opened)) {
+    for (const OpenedFile &op : std::as_const(opened)) {
         if (op.langGuessed) {
             if (waitCursor) {
                 QApplication::restoreOverrideCursor();
@@ -696,7 +668,7 @@ bool MainWindow::openFiles(const QStringList &names, bool globalReadWrite)
     m_contextView->setUpdatesEnabled(false);
     m_messageView->setUpdatesEnabled(false);
     int totalCount = 0;
-    for (const OpenedFile &op : qAsConst(opened)) {
+    for (const OpenedFile &op : std::as_const(opened)) {
         m_phraseDict.append(QHash<QString, QList<Phrase *> >());
         m_dataModel->append(op.dataModel, op.readWrite);
         if (op.readWrite)
@@ -760,7 +732,7 @@ static QString fileFilters(bool allFirst)
     static const QString pattern(QLatin1String("%1 (*.%2);;"));
     QStringList allExtensions;
     QString filter;
-    for (const Translator::FileFormat &format : qAsConst(Translator::registeredFileFormats())) {
+    for (const Translator::FileFormat &format : std::as_const(Translator::registeredFileFormats())) {
         if (format.fileType == Translator::FileFormat::TranslationSource && format.priority >= 0) {
             filter.append(pattern.arg(format.description(), format.extension));
             allExtensions.append(QLatin1String("*.") + format.extension);
@@ -979,23 +951,26 @@ bool MainWindow::searchItem(DataModel::FindLocation where, const QString &search
 
     QString text = searchWhat;
 
-    if (m_findIgnoreAccelerators)
+    if (m_findOptions.testFlag(FindDialog::IgnoreAccelerators))
         // FIXME: This removes too much. The proper solution might be too slow, though.
         text.remove(QLatin1Char('&'));
 
-    if (m_findUseRegExp)
+    if (m_findOptions.testFlag(FindDialog::UseRegExp))
         return m_findDialog->getRegExp().match(text).hasMatch();
     else
-        return text.indexOf(m_findText, 0, m_findMatchCase) >= 0;
+        return text.indexOf(m_findText, 0, m_findOptions.testFlag(FindDialog::MatchCase)
+                            ? Qt::CaseSensitive : Qt::CaseInsensitive) >= 0;
 }
 
-void MainWindow::findAgain()
+void MainWindow::findAgain(FindDirection direction)
 {
     if (m_dataModel->contextCount() == 0)
         return;
 
     const QModelIndex &startIndex = m_messageView->currentIndex();
-    QModelIndex index = nextMessage(startIndex);
+    QModelIndex index = (direction == FindNext
+            ? nextMessage(startIndex)
+            : prevMessage(startIndex));
 
     while (index.isValid()) {
         QModelIndex realIndex = m_sortedMessagesModel->mapToSource(index);
@@ -1003,8 +978,13 @@ void MainWindow::findAgain()
         bool hadMessage = false;
         for (int i = 0; i < m_dataModel->modelCount(); ++i) {
             if (MessageItem *m = m_dataModel->messageItem(dataIndex, i)) {
-                if (m_findSkipObsolete && m->isObsolete())
+                if (m_findStatusFilter != -1 && m_findStatusFilter != m->type())
                     continue;
+
+                if (m_findOptions.testFlag(FindDialog::SkipObsolete)
+                        && m->isObsolete())
+                    continue;
+
                 bool found = true;
                 do {
                     if (!hadMessage) {
@@ -1050,7 +1030,9 @@ void MainWindow::findAgain()
         if (index == startIndex)
             break;
 
-        index = nextMessage(index);
+        index = (direction == FindNext
+                    ? nextMessage(index)
+                    : prevMessage(index));
     }
 
     qApp->beep();
@@ -1181,7 +1163,7 @@ void MainWindow::newPhraseBook()
 
 bool MainWindow::isPhraseBookOpen(const QString &name)
 {
-    for (const PhraseBook *pb : qAsConst(m_phraseBooks)) {
+    for (const PhraseBook *pb : std::as_const(m_phraseBooks)) {
         if (pb->fileName() == name)
             return true;
     }
@@ -1198,7 +1180,7 @@ void MainWindow::openPhraseBook()
         m_phraseBookDir = QFileInfo(name).absolutePath();
         if (!isPhraseBookOpen(name)) {
             if (PhraseBook *phraseBook = doOpenPhraseBook(name)) {
-                int n = phraseBook->phrases().count();
+                int n = phraseBook->phrases().size();
                 statusBar()->showMessage(tr("%n phrase(s) loaded.", 0, n), MessageMS);
             }
         }
@@ -1278,7 +1260,7 @@ void MainWindow::addToPhraseBook()
 {
     QStringList phraseBookList;
     QHash<QString, PhraseBook *> phraseBookHash;
-    for (PhraseBook *pb : qAsConst(m_phraseBooks)) {
+    for (PhraseBook *pb : std::as_const(m_phraseBooks)) {
         if (pb->language() != QLocale::C && m_dataModel->language(m_currentIndex.model()) != QLocale::C) {
             if (pb->language() != m_dataModel->language(m_currentIndex.model()))
                 continue;
@@ -1776,22 +1758,21 @@ bool MainWindow::doNext(bool checkUnfinished)
 }
 
 void MainWindow::findNext(const QString &text, DataModel::FindLocation where,
-                          bool matchCase, bool ignoreAccelerators, bool skipObsolete, bool useRegExp)
+                          FindDialog::FindOptions options, int statusFilter)
 {
     if (text.isEmpty())
         return;
     m_findText = text;
     m_findWhere = where;
-    m_findMatchCase = matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive;
-    m_findIgnoreAccelerators = ignoreAccelerators;
-    m_findSkipObsolete = skipObsolete;
-    m_findUseRegExp = useRegExp;
-    if (m_findUseRegExp) {
-        m_findDialog->getRegExp().setPatternOptions(matchCase
+    m_findOptions = options;
+    m_findStatusFilter = statusFilter;
+    if (options.testFlag(FindDialog::UseRegExp)) {
+        m_findDialog->getRegExp().setPatternOptions(options.testFlag(FindDialog::MatchCase)
                                                     ? QRegularExpression::NoPatternOption
                                                     : QRegularExpression::CaseInsensitiveOption);
     }
     m_ui.actionFindNext->setEnabled(true);
+    m_ui.actionFindPrev->setEnabled(true);
     findAgain();
 }
 
@@ -1905,7 +1886,9 @@ void MainWindow::setupMenuBar()
     connect(m_ui.actionFind, &QAction::triggered,
             m_findDialog, &FindDialog::find);
     connect(m_ui.actionFindNext, &QAction::triggered,
-            this, &MainWindow::findAgain);
+            this, [this] {findAgain(FindNext);});
+    connect(m_ui.actionFindPrev, &QAction::triggered,
+            this, [this] {findAgain(FindPrev);});
     connect(m_ui.actionSearchAndTranslate, &QAction::triggered,
             this, &MainWindow::showTranslateDialog);
     connect(m_ui.actionBatchTranslation, &QAction::triggered,
@@ -1982,8 +1965,8 @@ void MainWindow::setupMenuBar()
     // Window menu
     QMenu *windowMenu = new QMenu(tr("&Window"), this);
     menuBar()->insertMenu(m_ui.menuHelp->menuAction(), windowMenu);
-    windowMenu->addAction(tr("Minimize"), this,
-        &QWidget::showMinimized, QKeySequence(tr("Ctrl+M")));
+    windowMenu->addAction(tr("Minimize"), QKeySequence(tr("Ctrl+M")),
+        this, &QWidget::showMinimized);
 #endif
 
     // Help
@@ -2371,7 +2354,7 @@ bool MainWindow::maybeSavePhraseBook(PhraseBook *pb)
 
 bool MainWindow::maybeSavePhraseBooks()
 {
-    for (PhraseBook *phraseBook : qAsConst(m_phraseBooks))
+    for (PhraseBook *phraseBook : std::as_const(m_phraseBooks))
         if (!maybeSavePhraseBook(phraseBook))
             return false;
     return true;
@@ -2412,7 +2395,7 @@ void MainWindow::updatePhraseDictInternal(int model)
     QHash<QString, QList<Phrase *> > &pd = m_phraseDict[model];
 
     pd.clear();
-    for (PhraseBook *pb : qAsConst(m_phraseBooks)) {
+    for (PhraseBook *pb : std::as_const(m_phraseBooks)) {
         bool before;
         if (pb->language() != QLocale::C && m_dataModel->language(model) != QLocale::C) {
             if (pb->language() != m_dataModel->language(model))
@@ -2424,7 +2407,7 @@ void MainWindow::updatePhraseDictInternal(int model)
         const auto phrases = pb->phrases();
         for (Phrase *p : phrases) {
             QString f = friendlyString(p->source());
-            if (f.length() > 0) {
+            if (f.size() > 0) {
                 f = f.split(QLatin1Char(' ')).first();
                 if (!pd.contains(f)) {
                     pd.insert(f, QList<Phrase *>());
@@ -2505,7 +2488,7 @@ void MainWindow::updateDanger(const MultiDataIndex &index, bool verbose)
             QStringList translations = m->translations();
 
             // Truncated variants are permitted to be "denormalized"
-            for (int i = 0; i < translations.count(); ++i) {
+            for (int i = 0; i < translations.size(); ++i) {
                 int sep = translations.at(i).indexOf(QChar(Translator::BinaryVariantSeparator));
                 if (sep >= 0)
                     translations[i].truncate(sep);
@@ -2514,7 +2497,7 @@ void MainWindow::updateDanger(const MultiDataIndex &index, bool verbose)
             if (m_ui.actionAccelerators->isChecked()) {
                 bool sk = haveMnemonic(source);
                 bool tk = true;
-                for (int i = 0; i < translations.count() && tk; ++i) {
+                for (int i = 0; i < translations.size() && tk; ++i) {
                     tk &= haveMnemonic(translations[i]);
                 }
 
@@ -2530,7 +2513,7 @@ void MainWindow::updateDanger(const MultiDataIndex &index, bool verbose)
             }
             if (m_ui.actionSurroundingWhitespace->isChecked()) {
                 bool whitespaceok = true;
-                for (int i = 0; i < translations.count() && whitespaceok; ++i) {
+                for (int i = 0; i < translations.size() && whitespaceok; ++i) {
                     whitespaceok &= (leadingWhitespace(source) == leadingWhitespace(translations[i]));
                     whitespaceok &= (trailingWhitespace(source) == trailingWhitespace(translations[i]));
                 }
@@ -2543,7 +2526,7 @@ void MainWindow::updateDanger(const MultiDataIndex &index, bool verbose)
             }
             if (m_ui.actionEndingPunctuation->isChecked()) {
                 bool endingok = true;
-                for (int i = 0; i < translations.count() && endingok; ++i) {
+                for (int i = 0; i < translations.size() && endingok; ++i) {
                     endingok &= (ending(source, m_dataModel->sourceLanguage(mi)) ==
                                 ending(translations[i], m_dataModel->language(mi)));
                 }
@@ -2560,7 +2543,7 @@ void MainWindow::updateDanger(const MultiDataIndex &index, bool verbose)
                 QStringList lookupWords = fsource.split(QLatin1Char(' '));
 
                 bool phraseFound;
-                for (const QString &s : qAsConst(lookupWords)) {
+                for (const QString &s : std::as_const(lookupWords)) {
                     if (m_phraseDict[mi].contains(s)) {
                         phraseFound = true;
                         const auto phrases = m_phraseDict[mi].value(s);
@@ -2594,14 +2577,14 @@ void MainWindow::updateDanger(const MultiDataIndex &index, bool verbose)
                 // between place markers in the source text and the translation text.
                 QHash<int, int> placeMarkerIndexes;
                 QString translation;
-                int numTranslations = translations.count();
+                int numTranslations = translations.size();
                 for (int pass = 0; pass < numTranslations + 1; ++pass) {
                     const QChar *uc_begin = source.unicode();
-                    const QChar *uc_end = uc_begin + source.length();
+                    const QChar *uc_end = uc_begin + source.size();
                     if (pass >= 1) {
                         translation = translations[pass - 1];
                         uc_begin = translation.unicode();
-                        uc_end = uc_begin + translation.length();
+                        uc_end = uc_begin + translation.size();
                     }
                     const QChar *c = uc_begin;
                     while (c < uc_end) {
@@ -2620,7 +2603,7 @@ void MainWindow::updateDanger(const MultiDataIndex &index, bool verbose)
                     }
                 }
 
-                for (int i : qAsConst(placeMarkerIndexes)) {
+                for (int i : std::as_const(placeMarkerIndexes)) {
                     if (i != 0) {
                         if (verbose)
                             m_errorsView->addError(mi, ErrorsView::PlaceMarkersDiffer);

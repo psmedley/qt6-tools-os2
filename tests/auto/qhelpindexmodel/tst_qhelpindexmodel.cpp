@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the test suite of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 #include <QtTest/QtTest>
 
 #include <QtCore/QThread>
@@ -109,7 +84,7 @@ void tst_QHelpIndexModel::setupIndex()
         QTest::qWait(500);
 
     QCOMPARE(h.currentFilter(), QString("unfiltered"));
-    QCOMPARE(m->stringList().count(), 19);
+    QCOMPARE(m->stringList().size(), 19);
 
     w.start();
     h.setCurrentFilter("Custom Filter 1");
@@ -120,7 +95,7 @@ void tst_QHelpIndexModel::setupIndex()
     QStringList lst;
     lst << "foo" << "bar" << "bla" << "einstein" << "newton";
     const auto stringList = m->stringList();
-    QCOMPARE(stringList.count(), 5);
+    QCOMPARE(stringList.size(), 5);
     for (const QString &s : stringList)
         lst.removeAll(s);
     QCOMPARE(lst.isEmpty(), true);
@@ -141,16 +116,16 @@ void tst_QHelpIndexModel::filter()
         QTest::qWait(500);
 
     QCOMPARE(h.currentFilter(), QString("unfiltered"));
-    QCOMPARE(m->stringList().count(), 19);
+    QCOMPARE(m->stringList().size(), 19);
 
     m->filter("foo");
-    QCOMPARE(m->stringList().count(), 2);
+    QCOMPARE(m->stringList().size(), 2);
 
     m->filter("fo");
-    QCOMPARE(m->stringList().count(), 3);
+    QCOMPARE(m->stringList().size(), 3);
 
     m->filter("qmake");
-    QCOMPARE(m->stringList().count(), 11);
+    QCOMPARE(m->stringList().size(), 11);
 }
 
 QTEST_MAIN(tst_QHelpIndexModel)

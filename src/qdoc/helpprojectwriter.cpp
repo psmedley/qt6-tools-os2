@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2021 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the tools applications of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2021 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "helpprojectwriter.h"
 
@@ -155,7 +130,8 @@ void HelpProjectWriter::readSelectors(SubProject &subproject, const QStringList 
     typeHash["jsproperty"] = Node::QmlProperty;
     typeHash["qmlclass"] = Node::QmlType; // Legacy alias for 'qmltype'
     typeHash["qmltype"] = Node::QmlType;
-    typeHash["qmlbasictype"] = Node::QmlBasicType;
+    typeHash["qmlbasictype"] = Node::QmlValueType; // Legacy alias for 'qmlvaluetype'
+    typeHash["qmlvaluetype"] = Node::QmlValueType;
 
     for (const QString &selector : selectors) {
         QStringList pieces = selector.split(QLatin1Char(':'));
@@ -170,7 +146,7 @@ void HelpProjectWriter::readSelectors(SubProject &subproject, const QStringList 
         subproject.m_selectors << typeHash.value(typeName);
         if (!pieces.isEmpty()) {
             pieces = pieces[0].split(QLatin1Char(','));
-            for (const auto &piece : qAsConst(pieces)) {
+            for (const auto &piece : std::as_const(pieces)) {
                 if (typeHash[typeName] == Node::Group
                     || typeHash[typeName] == Node::Module
                     || typeHash[typeName] == Node::QmlModule
@@ -241,7 +217,7 @@ bool HelpProjectWriter::generateSection(HelpProject &project, QXmlStreamWriter &
     // Only add nodes to the set for each subproject if they match a selector.
     // Those that match will be listed in the table of contents.
 
-    for (int i = 0; i < project.m_subprojects.length(); i++) {
+    for (int i = 0; i < project.m_subprojects.size(); i++) {
         SubProject subproject = project.m_subprojects[i];
         // No selectors: accept all nodes.
         if (subproject.m_selectors.isEmpty()) {
@@ -279,7 +255,7 @@ bool HelpProjectWriter::generateSection(HelpProject &project, QXmlStreamWriter &
         project.m_keywords.append(keywordDetails(node));
         break;
     case Node::QmlType:
-    case Node::QmlBasicType:
+    case Node::QmlValueType:
     case Node::JsType:
     case Node::JsBasicType:
         if (node->doc().hasKeywords()) {
@@ -454,26 +430,28 @@ void HelpProjectWriter::generateSections(HelpProject &project, QXmlStreamWriter 
         const auto *aggregate = static_cast<const Aggregate *>(node);
 
         // Ensure that we don't visit nodes more than once.
-        QSet<const Node *> childSet;
+        NodeList childSet;
         NodeList children = aggregate->childNodes();
         std::sort(children.begin(), children.end(), Node::nodeNameLessThan);
-        for (const auto *child : children) {
+        for (auto *child : children) {
             // Skip related non-members adopted by some other aggregate
             if (child->parent() != aggregate)
                 continue;
             if (child->isIndexNode() || child->isPrivate())
                 continue;
             if (child->isTextPageNode()) {
-                childSet << child;
+                if (!childSet.contains(child))
+                    childSet << child;
             } else {
                 // Store member status of children
                 project.m_memberStatus[node].insert(child->status());
                 if (child->isFunction() && static_cast<const FunctionNode *>(child)->isOverload())
                     continue;
-                childSet << child;
+                if (!childSet.contains(child))
+                    childSet << child;
             }
         }
-        for (const auto *child : qAsConst(childSet))
+        for (const auto *child : std::as_const(childSet))
             generateSections(project, writer, child);
     }
 }
@@ -549,7 +527,7 @@ void HelpProjectWriter::writeNode(HelpProject &project, QXmlStreamWriter &writer
     case Node::Union:
     case Node::QmlType:
     case Node::JsType:
-    case Node::QmlBasicType:
+    case Node::QmlValueType:
     case Node::JsBasicType: {
         QString typeStr = m_gen->typeString(node);
         if (!typeStr.isEmpty())
@@ -633,7 +611,7 @@ void HelpProjectWriter::generateProject(HelpProject &project)
         writer.writeAttribute("name", it.key());
         QStringList sortedAttributes = it.value().values();
         sortedAttributes.sort();
-        for (const auto &filter : qAsConst(sortedAttributes))
+        for (const auto &filter : std::as_const(sortedAttributes))
             writer.writeTextElement("filterAttribute", filter);
         writer.writeEndElement(); // customFilter
     }
@@ -644,7 +622,7 @@ void HelpProjectWriter::generateProject(HelpProject &project)
     // Write filterAttribute elements.
     QStringList sortedFilterAttributes = project.m_filterAttributes.values();
     sortedFilterAttributes.sort();
-    for (const auto &filterName : qAsConst(sortedFilterAttributes))
+    for (const auto &filterName : std::as_const(sortedFilterAttributes))
         writer.writeTextElement("filterAttribute", filterName);
 
     writer.writeStartElement("toc");
@@ -664,7 +642,7 @@ void HelpProjectWriter::generateProject(HelpProject &project)
 
     generateSections(project, writer, rootNode);
 
-    for (int i = 0; i < project.m_subprojects.length(); i++) {
+    for (int i = 0; i < project.m_subprojects.size(); i++) {
         SubProject subproject = project.m_subprojects[i];
 
         if (subproject.m_type == QLatin1String("manual")) {
@@ -727,14 +705,14 @@ void HelpProjectWriter::generateProject(HelpProject &project)
             if (subproject.m_sortPages) {
                 QStringList titles = subproject.m_nodes.keys();
                 titles.sort();
-                for (const auto &title : qAsConst(titles)) {
+                for (const auto &title : std::as_const(titles)) {
                     writeNode(project, writer, subproject.m_nodes[title]);
                 }
             } else {
                 // Find a contents node and navigate from there, using the NextLink values.
                 QSet<QString> visited;
                 bool contentsFound = false;
-                for (const auto *node : qAsConst(subproject.m_nodes)) {
+                for (const auto *node : std::as_const(subproject.m_nodes)) {
                     QString nextTitle = node->links().value(Node::NextLink).first;
                     if (!nextTitle.isEmpty()
                         && node->links().value(Node::ContentsLink).first.isEmpty()) {
@@ -762,7 +740,7 @@ void HelpProjectWriter::generateProject(HelpProject &project)
 
                     std::sort(subnodes.begin(), subnodes.end(), Node::nodeNameLessThan);
 
-                    for (const auto *node : qAsConst(subnodes))
+                    for (const auto *node : std::as_const(subnodes))
                         writeNode(project, writer, node);
                 }
             }
@@ -779,8 +757,8 @@ void HelpProjectWriter::generateProject(HelpProject &project)
 
     writer.writeStartElement("keywords");
     std::sort(project.m_keywords.begin(), project.m_keywords.end());
-    for (const auto &k : qAsConst(project.m_keywords)) {
-        for (const auto &id : qAsConst(k.m_ids)) {
+    for (const auto &k : std::as_const(project.m_keywords)) {
+        for (const auto &id : std::as_const(k.m_ids)) {
             writer.writeStartElement("keyword");
             writer.writeAttribute("name", k.m_name);
             writer.writeAttribute("id", id);
@@ -800,7 +778,7 @@ void HelpProjectWriter::generateProject(HelpProject &project)
     files.unite(project.m_extraFiles);
     QStringList sortedFiles = files.values();
     sortedFiles.sort();
-    for (const auto &usedFile : qAsConst(sortedFiles)) {
+    for (const auto &usedFile : std::as_const(sortedFiles)) {
         if (!usedFile.isEmpty())
             writer.writeTextElement("file", usedFile);
     }

@@ -1,1 +1,1 @@
-#include "../../src/designer/src/uitools/qtuitoolsglobal.h"
+#include "../../src/uitools/qtuitoolsglobal.h"

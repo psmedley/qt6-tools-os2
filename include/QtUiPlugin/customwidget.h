@@ -1,1 +1,1 @@
-#include "../../src/designer/src/uiplugin/customwidget.h"
+#include "../../src/uiplugin/customwidget.h"

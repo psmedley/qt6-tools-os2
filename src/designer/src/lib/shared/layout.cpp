@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Designer of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "layout_p.h"
 #include "layoutdecoration.h"
@@ -140,7 +115,7 @@ void Layout::setup()
     // Widgets which are already laid out are thrown away here too
 
     QMultiMap<QWidget*, QWidget*> lists;
-    for (QWidget *w : qAsConst(m_widgets)) {
+    for (QWidget *w : std::as_const(m_widgets)) {
         QWidget *p = w->parentWidget();
 
         if (p && LayoutInfo::layoutType(m_formWindow->core(), p) != LayoutInfo::NoLayout
@@ -184,7 +159,7 @@ void Layout::setup()
     // be placed and connect to widgetDestroyed() signals of the
     // widgets to get informed if one gets deleted to be able to
     // handle that and do not crash in this case
-    for (QWidget *w : qAsConst(m_widgets)) {
+    for (QWidget *w : std::as_const(m_widgets)) {
         connect(w, &QObject::destroyed, this, &Layout::widgetDestroyed);
         m_startPoint = QPoint(qMin(m_startPoint.x(), w->x()), qMin(m_startPoint.y(), w->y()));
         const QRect rc(w->geometry());
@@ -209,7 +184,7 @@ void Layout::widgetDestroyed()
 
 bool Layout::prepareLayout(bool &needMove, bool &needReparent)
 {
-    for (QWidget *widget : qAsConst(m_widgets))
+    for (QWidget *widget : std::as_const(m_widgets))
         widget->raise();
 
     needMove = !m_layoutBase;
@@ -372,7 +347,7 @@ void Layout::breakLayout()
      * to grow (expanding widgets like QTextEdit), in which the geometry is
      * preserved. Note that historically, geometries were re-applied
      * only after breaking splitters. */
-    for (QWidget *w : qAsConst(m_widgets)) {
+    for (QWidget *w : std::as_const(m_widgets)) {
         const QRect geom = w->geometry();
         const QSize sizeHint = w->sizeHint();
         const bool restoreGeometry = sizeHint.isEmpty() || sizeHint.width() > geom.width() || sizeHint.height() > geom.height();

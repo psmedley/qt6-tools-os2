@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Linguist of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "proitems.h"
 
@@ -64,13 +39,13 @@ ProString::ProString(const ProString &other, OmitPreHashing) :
 }
 
 ProString::ProString(const QString &str, DoPreHashing) :
-    m_string(str), m_offset(0), m_length(str.length()), m_file(0)
+    m_string(str), m_offset(0), m_length(str.size()), m_file(0)
 {
     updatedHash();
 }
 
 ProString::ProString(const QString &str) :
-    m_string(str), m_offset(0), m_length(str.length()), m_file(0), m_hash(0x80000000)
+    m_string(str), m_offset(0), m_length(str.size()), m_file(0), m_hash(0x80000000)
 {
 }
 
@@ -108,7 +83,7 @@ ProString::ProString(const QString &str, int offset, int length) :
 
 void ProString::setValue(const QString &str)
 {
-    m_string = str, m_offset = 0, m_length = str.length(), m_hash = 0x80000000;
+    m_string = str, m_offset = 0, m_length = str.size(), m_hash = 0x80000000;
 }
 
 size_t ProString::updatedHash() const
@@ -145,7 +120,7 @@ ProKey::ProKey(const QString &str, int off, int len, uint hash) :
 
 void ProKey::setValue(const QString &str)
 {
-    m_string = str, m_offset = 0, m_length = str.length();
+    m_string = str, m_offset = 0, m_length = str.size();
     updatedHash();
 }
 

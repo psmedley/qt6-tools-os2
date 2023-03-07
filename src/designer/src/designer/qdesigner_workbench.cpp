@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Designer of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "qdesigner_workbench.h"
 #include "qdesigner.h"
@@ -268,17 +243,17 @@ void QDesignerWorkbench::saveGeometriesForModeChange()
         break;
     case TopLevelMode: {
         const QPoint desktopOffset = QGuiApplication::primaryScreen()->availableGeometry().topLeft();
-        for (QDesignerToolWindow *tw : qAsConst(m_toolWindows))
+        for (QDesignerToolWindow *tw : std::as_const(m_toolWindows))
             m_Positions.insert(tw, Position(tw, desktopOffset));
-        for (QDesignerFormWindow *fw : qAsConst(m_formWindows))
+        for (QDesignerFormWindow *fw : std::as_const(m_formWindows))
             m_Positions.insert(fw,  Position(fw, desktopOffset));
     }
         break;
     case DockedMode: {
         const QPoint mdiAreaOffset = m_dockedMainWindow->mdiArea()->pos();
-        for (QDesignerToolWindow *tw : qAsConst(m_toolWindows))
+        for (QDesignerToolWindow *tw : std::as_const(m_toolWindows))
             m_Positions.insert(tw, Position(dockWidgetOf(tw)));
-        for (QDesignerFormWindow *fw : qAsConst(m_formWindows))
+        for (QDesignerFormWindow *fw : std::as_const(m_formWindows))
             m_Positions.insert(fw, Position(mdiSubWindowOf(fw), mdiAreaOffset));
     }
         break;
@@ -369,7 +344,7 @@ void QDesignerWorkbench::switchToNeutralMode()
 
     m_mode = NeutralMode;
 
-    for (QDesignerToolWindow *tw : qAsConst(m_toolWindows)) {
+    for (QDesignerToolWindow *tw : std::as_const(m_toolWindows)) {
         tw->setCloseEventPolicy(MainWindowBase::AcceptCloseEvents);
         tw->setParent(nullptr);
         // Prevent unneeded native children when switching to docked
@@ -380,7 +355,7 @@ void QDesignerWorkbench::switchToNeutralMode()
     if (m_dockedMainWindow != nullptr) // Prevent assert
         m_dockedMainWindow->mdiArea()->setActiveSubWindow(nullptr);
 
-    for (QDesignerFormWindow *fw : qAsConst(m_formWindows)) {
+    for (QDesignerFormWindow *fw : std::as_const(m_formWindows)) {
         fw->setParent(nullptr);
         fw->setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
         // Prevent unneeded native children when switching to docked
@@ -436,7 +411,7 @@ void QDesignerWorkbench::switchToDockedMode()
 #endif
     qDesigner->setMainWindow(m_dockedMainWindow);
 
-    for (QDesignerFormWindow *fw : qAsConst(m_formWindows)) {
+    for (QDesignerFormWindow *fw : std::as_const(m_formWindows)) {
         QMdiSubWindow *subwin = m_dockedMainWindow->createMdiSubWindow(fw, magicalWindowFlags(fw),
                                                                        m_actionManager->closeFormAction()->shortcut());
         subwin->hide();
@@ -456,7 +431,7 @@ void QDesignerWorkbench::adjustMDIFormPositions()
 {
     const QPoint mdiAreaOffset = m_dockedMainWindow->mdiArea()->pos();
 
-    for (QDesignerFormWindow *fw : qAsConst(m_formWindows)) {
+    for (QDesignerFormWindow *fw : std::as_const(m_formWindows)) {
         const PositionMap::const_iterator pit = m_Positions.constFind(fw);
         if (pit != m_Positions.constEnd())
             pit->applyTo(mdiSubWindowOf(fw), mdiAreaOffset);
@@ -510,7 +485,7 @@ void QDesignerWorkbench::switchToTopLevelMode()
     widgetBoxWrapper->restoreState(settings.mainWindowState(m_mode), MainWindowBase::settingsVersion());
 
     bool found_visible_window = false;
-    for (QDesignerToolWindow *tw : qAsConst(m_toolWindows)) {
+    for (QDesignerToolWindow *tw : std::as_const(m_toolWindows)) {
         tw->setParent(magicalParent(tw), magicalWindowFlags(tw));
         settings.restoreGeometry(tw, tw->geometryHint());
         tw->action()->setChecked(tw->isVisible());
@@ -522,7 +497,7 @@ void QDesignerWorkbench::switchToTopLevelMode()
 
     m_actionManager->setBringAllToFrontVisible(true);
 
-    for (QDesignerFormWindow *fw : qAsConst(m_formWindows)) {
+    for (QDesignerFormWindow *fw : std::as_const(m_formWindows)) {
         fw->setParent(magicalParent(fw), magicalWindowFlags(fw));
         fw->setAttribute(Qt::WA_DeleteOnClose, true);
         const PositionMap::const_iterator pit = m_Positions.constFind(fw);
@@ -632,7 +607,7 @@ void QDesignerWorkbench::initializeCorePlugins()
     QObjectList plugins = QPluginLoader::staticInstances();
     plugins += core()->pluginManager()->instances();
 
-    for (QObject *plugin : qAsConst(plugins)) {
+    for (QObject *plugin : std::as_const(plugins)) {
         if (QDesignerFormEditorPluginInterface *formEditorPlugin = qobject_cast<QDesignerFormEditorPluginInterface*>(plugin)) {
             if (!formEditorPlugin->isInitialized())
                 formEditorPlugin->initialize(core());
@@ -699,7 +674,7 @@ bool QDesignerWorkbench::handleClose()
 {
     m_state = StateClosing;
     QList<QDesignerFormWindow *> dirtyForms;
-    for (QDesignerFormWindow *w : qAsConst(m_formWindows)) {
+    for (QDesignerFormWindow *w : std::as_const(m_formWindows)) {
         if (w->editor()->isDirty())
             dirtyForms << w;
     }
@@ -725,7 +700,7 @@ bool QDesignerWorkbench::handleClose()
             m_state = StateUp;
             return false;
         case QMessageBox::Save:
-            for (QDesignerFormWindow *fw : qAsConst(dirtyForms)) {
+            for (QDesignerFormWindow *fw : std::as_const(dirtyForms)) {
                 fw->show();
                 fw->raise();
                 if (!fw->close()) {
@@ -735,7 +710,7 @@ bool QDesignerWorkbench::handleClose()
             }
             break;
         case QMessageBox::Discard:
-            for (QDesignerFormWindow *fw : qAsConst(dirtyForms)) {
+            for (QDesignerFormWindow *fw : std::as_const(dirtyForms)) {
                 fw->editor()->setDirty(false);
                 fw->setWindowModified(false);
             }
@@ -743,7 +718,7 @@ bool QDesignerWorkbench::handleClose()
         }
     }
 
-    for (QDesignerFormWindow *fw : qAsConst(m_formWindows))
+    for (QDesignerFormWindow *fw : std::as_const(m_formWindows))
         fw->close();
 
     saveSettings();
@@ -774,7 +749,7 @@ void QDesignerWorkbench::updateWindowMenu(QDesignerFormWindowInterface *fwi)
     m_actionManager->minimizeAction()->setEnabled(minimizeEnabled);
     m_actionManager->minimizeAction()->setChecked(minimizeChecked);
 
-    for (QDesignerFormWindow *fw : qAsConst(m_formWindows))
+    for (QDesignerFormWindow *fw : std::as_const(m_formWindows))
         fw->action()->setChecked(fw == activeFormWindow);
 }
 
@@ -798,7 +773,7 @@ void QDesignerWorkbench::formWindowActionTriggered(QAction *a)
 
 void QDesignerWorkbench::closeAllToolWindows()
 {
-    for (QDesignerToolWindow *tw : qAsConst(m_toolWindows))
+    for (QDesignerToolWindow *tw : std::as_const(m_toolWindows))
         tw->hide();
 }
 
@@ -852,9 +827,9 @@ void QDesignerWorkbench::bringAllToFront()
 {
     if (m_mode !=  TopLevelMode)
         return;
-    for (QDesignerToolWindow *tw : qAsConst(m_toolWindows))
+    for (QDesignerToolWindow *tw : std::as_const(m_toolWindows))
         raiseWindow(tw);
-    for (QDesignerFormWindow *dfw : qAsConst(m_formWindows))
+    for (QDesignerFormWindow *dfw : std::as_const(m_formWindows))
         raiseWindow(dfw);
 }
 
@@ -1091,7 +1066,7 @@ void QDesignerWorkbench::restoreUISettings()
     if (font == m_toolWindows.constFirst()->font())
         return;
 
-    for (QDesignerToolWindow *tw : qAsConst(m_toolWindows))
+    for (QDesignerToolWindow *tw : std::as_const(m_toolWindows))
         tw->setFont(font);
 }
 

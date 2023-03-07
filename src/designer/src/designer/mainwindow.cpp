@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Designer of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "mainwindow.h"
 #include "qdesigner.h"
@@ -221,7 +196,7 @@ ToolBarManager::ToolBarManager(QMainWindow *configureableMainWindow,
 
     m_manager->setMainWindow(configureableMainWindow);
 
-    for (QToolBar *tb : qAsConst(m_toolbars)) {
+    for (QToolBar *tb : std::as_const(m_toolbars)) {
         const QString title = tb->windowTitle();
         m_manager->addToolBar(tb, title);
         addActionsToToolBarManager(tb->actions(), title, m_manager);
@@ -265,7 +240,7 @@ void ToolBarManager::updateToolBarMenu()
     std::stable_sort(m_toolbars.begin(), m_toolbars.end(), toolBarTitleLessThan);
     // add to menu
     m_toolBarMenu->clear();
-    for (QToolBar *tb : qAsConst(m_toolbars))
+    for (QToolBar *tb : std::as_const(m_toolbars))
         m_toolBarMenu->addAction(tb->toggleViewAction());
     m_toolBarMenu->addAction(m_configureAction);
 }

@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2021 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the tools applications of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2021 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "aggregate.h"
 
@@ -235,7 +210,7 @@ FunctionNode *Aggregate::findFunctionChild(const FunctionNode *clone)
  */
 void Aggregate::markUndocumentedChildrenInternal()
 {
-    for (auto *child : qAsConst(m_children)) {
+    for (auto *child : std::as_const(m_children)) {
         if (!child->isSharingComment() && !child->hasDoc() && !child->isDontDocument()) {
             if (!child->docMustBeGenerated()) {
                 if (child->isFunction()) {
@@ -301,7 +276,7 @@ void Aggregate::normalizeOverloads()
         }
     }
 
-    for (auto *node : qAsConst(m_children)) {
+    for (auto *node : std::as_const(m_children)) {
         if (node->isAggregate())
             static_cast<Aggregate *>(node)->normalizeOverloads();
     }
@@ -383,7 +358,7 @@ bool Aggregate::isSameSignature(const FunctionNode *f1, const FunctionNode *f2)
             QString t1 = p1.at(i).type();
             QString t2 = p2.at(i).type();
 
-            if (t1.length() < t2.length())
+            if (t1.size() < t2.size())
                 qSwap(t1, t2);
 
             /*
@@ -554,7 +529,7 @@ void Aggregate::adoptChild(Node *child)
 void Aggregate::setOutputSubdirectory(const QString &t)
 {
     Node::setOutputSubdirectory(t);
-    for (auto *node : qAsConst(m_children))
+    for (auto *node : std::as_const(m_children))
         node->setOutputSubdirectory(t);
 }
 
@@ -567,7 +542,7 @@ QmlPropertyNode *Aggregate::hasQmlProperty(const QString &n) const
     NodeType goal = Node::QmlProperty;
     if (isJsNode())
         goal = Node::JsProperty;
-    for (auto *child : qAsConst(m_children)) {
+    for (auto *child : std::as_const(m_children)) {
         if (child->nodeType() == goal) {
             if (child->name() == n)
                 return static_cast<QmlPropertyNode *>(child);
@@ -586,7 +561,7 @@ QmlPropertyNode *Aggregate::hasQmlProperty(const QString &n, bool attached) cons
     NodeType goal = Node::QmlProperty;
     if (isJsNode())
         goal = Node::JsProperty;
-    for (auto *child : qAsConst(m_children)) {
+    for (auto *child : std::as_const(m_children)) {
         if (child->nodeType() == goal) {
             if (child->name() == n && child->isAttached() == attached)
                 return static_cast<QmlPropertyNode *>(child);
@@ -653,7 +628,7 @@ void Aggregate::findAllFunctions(NodeMapMap &functionIndex)
             fn = fn->nextOverload();
         }
     }
-    for (Node *node : qAsConst(m_children)) {
+    for (Node *node : std::as_const(m_children)) {
         if (node->isAggregate() && !node->isPrivate() && !node->isDontDocument())
             static_cast<Aggregate *>(node)->findAllFunctions(functionIndex);
     }
@@ -675,7 +650,7 @@ void Aggregate::findAllFunctions(NodeMapMap &functionIndex)
   */
 void Aggregate::findAllNamespaces(NodeMultiMap &namespaces)
 {
-    for (auto *node : qAsConst(m_children)) {
+    for (auto *node : std::as_const(m_children)) {
         if (node->isAggregate() && !node->isPrivate()) {
             if (node->isNamespace() && !node->name().isEmpty())
                 namespaces.insert(node->name(), node);
@@ -708,7 +683,7 @@ bool Aggregate::hasObsoleteMembers() const
  */
 void Aggregate::findAllObsoleteThings()
 {
-    for (auto *node : qAsConst(m_children)) {
+    for (auto *node : std::as_const(m_children)) {
         if (!node->isPrivate()) {
             QString name = node->name();
             if (node->isDeprecated()) {
@@ -739,7 +714,7 @@ void Aggregate::findAllObsoleteThings()
  */
 void Aggregate::findAllClasses()
 {
-    for (auto *node : qAsConst(m_children)) {
+    for (auto *node : std::as_const(m_children)) {
         if (!node->isPrivate() && !node->isInternal() && !node->isDontDocument()
             && node->tree()->camelCaseModuleName() != QString("QDoc")) {
             if (node->isClassNode()) {
@@ -769,7 +744,7 @@ void Aggregate::findAllClasses()
  */
 void Aggregate::findAllAttributions(NodeMultiMap &attributions)
 {
-    for (auto *node : qAsConst(m_children)) {
+    for (auto *node : std::as_const(m_children)) {
         if (!node->isPrivate()) {
             if (node->pageType() == Node::AttributionPage)
                 attributions.insert(node->tree()->indexTitle(), node);
@@ -789,7 +764,7 @@ void Aggregate::findAllAttributions(NodeMultiMap &attributions)
  */
 void Aggregate::findAllSince()
 {
-    for (auto *node : qAsConst(m_children)) {
+    for (auto *node : std::as_const(m_children)) {
         if (node->isRelatedNonmember() && node->parent() != this)
             continue;
         QString sinceString = node->since();
@@ -844,7 +819,7 @@ void Aggregate::findAllSince()
 void Aggregate::resolveQmlInheritance()
 {
     NodeMap previousSearches;
-    for (auto *child : qAsConst(m_children)) {
+    for (auto *child : std::as_const(m_children)) {
         if (!child->isQmlType() && !child->isJsType())
             continue;
         static_cast<QmlTypeNode *>(child)->resolveInheritance(previousSearches);

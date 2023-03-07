@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the tools applications of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "qdocgenerator.h"
 
@@ -66,8 +41,16 @@ static QString languageJoin(const QStringList &list)
     return result;
 }
 
-static void generate(QTextStream &out, const Package &package, const QDir &baseDir,
-                     LogLevel logLevel)
+// Embed source code between \badcode ... \endbadcode
+// Also, avoid '*/' breaking qdoc by passing the star as argument
+static void sourceCode(QTextStream &out, const QString &src)
+{
+    out << "\\badcode *\n";
+    out << QString(src).replace(QStringLiteral("*/"), QStringLiteral("\\1/"));
+    out << "\n\\endcode\n\n";
+}
+
+static void generate(QTextStream &out, const Package &package, const QDir &baseDir)
 {
     out << "/*!\n\n";
     for (const QString &part : package.qtParts) {
@@ -132,24 +115,13 @@ static void generate(QTextStream &out, const Package &package, const QDir &baseD
     QString copyright;
     if (!package.copyright.isEmpty())
         copyright = package.copyright;
+    else if (!package.copyrightFileContents.isEmpty())
+        copyright = package.copyrightFileContents;
 
-    if (!package.copyrightFile.isEmpty()) {
-        const QDir packageDir(package.path);
-        QFile file(QDir(package.path).absoluteFilePath(package.copyrightFile));
-        if (!file.open(QIODevice::ReadOnly)) {
-            if (logLevel != SilentLog) {
-                std::cerr << qPrintable(
-                        tr("Path %1 : cannot open copyright file %2.\n")
-                                .arg(QDir::toNativeSeparators(package.path))
-                                .arg(QDir::toNativeSeparators(package.copyrightFile)));
-            }
-        } else {
-            copyright = QString::fromUtf8(file.readAll());
-        }
+    if (!copyright.isEmpty()) {
+        out << "\n";
+        sourceCode(out, copyright);
     }
-
-    if (!copyright.isEmpty())
-        out << "\n\\badcode\n" << copyright << "\n\\endcode\n\n";
 
     if (isSpdxLicenseId(package.licenseId) && package.licenseId != QLatin1String("NONE")) {
         out << "\\l{https://spdx.org/licenses/" << package.licenseId << ".html}"
@@ -161,21 +133,9 @@ static void generate(QTextStream &out, const Package &package, const QDir &baseD
         out << package.license << ".\n\n";
     }
 
-    foreach (const QString &licenseFile, package.licenseFiles) {
-        QFile file(licenseFile);
-        if (!file.open(QIODevice::ReadOnly)) {
-            if (logLevel != SilentLog) {
-                std::cerr << qPrintable(tr("Path %1 : cannot open license file %2.\n")
-                                                .arg(QDir::toNativeSeparators(package.path))
-                                                .arg(QDir::toNativeSeparators(licenseFile)));
-                out << "*/\n";
-            }
-            return;
-        }
-        out << "\\badcode\n";
-        out << QString::fromUtf8(file.readAll()).trimmed();
-        out << "\n\\endcode\n\n";
-    }
+    foreach (const QString &license, package.licenseFilesContents)
+        sourceCode(out, license);
+
     out << "*/\n";
 }
 
@@ -187,7 +147,7 @@ void generate(QTextStream &out, const QList<Package> &packages, const QString &b
 
     QDir baseDir(baseDirectory);
     for (const Package &package : packages)
-        generate(out, package, baseDir, logLevel);
+        generate(out, package, baseDir);
 }
 
 } // namespace QDocGenerator

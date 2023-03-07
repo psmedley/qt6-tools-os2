@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Linguist of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "messagemodel.h"
 #include "statistics.h"
@@ -89,9 +64,9 @@ void ContextItem::appendToComment(const QString &str)
 
 MessageItem *ContextItem::messageItem(int i) const
 {
-    if (i >= 0 && i < msgItemList.count())
+    if (i >= 0 && i < msgItemList.size())
         return const_cast<MessageItem *>(&msgItemList[i]);
-    Q_ASSERT(i >= 0 && i < msgItemList.count());
+    Q_ASSERT(i >= 0 && i < msgItemList.size());
     return 0;
 }
 
@@ -126,14 +101,14 @@ DataModel::DataModel(QObject *parent)
 
 QStringList DataModel::normalizedTranslations(const MessageItem &m) const
 {
-    return Translator::normalizedTranslations(m.message(), m_numerusForms.count());
+    return Translator::normalizedTranslations(m.message(), m_numerusForms.size());
 }
 
 ContextItem *DataModel::contextItem(int context) const
 {
-    if (context >= 0 && context < m_contextList.count())
+    if (context >= 0 && context < m_contextList.size())
         return const_cast<ContextItem *>(&m_contextList[context]);
-    Q_ASSERT(context >= 0 && context < m_contextList.count());
+    Q_ASSERT(context >= 0 && context < m_contextList.size());
     return 0;
 }
 
@@ -146,7 +121,7 @@ MessageItem *DataModel::messageItem(const DataIndex &index) const
 
 ContextItem *DataModel::findContext(const QString &context) const
 {
-    for (int c = 0; c < m_contextList.count(); ++c) {
+    for (int c = 0; c < m_contextList.size(); ++c) {
         ContextItem *ctx = contextItem(c);
         if (ctx->context() == context)
             return ctx;
@@ -369,9 +344,9 @@ bool DataModel::release(const QString &fileName, bool verbose, bool ignoreUnfini
 
 void DataModel::doCharCounting(const QString &text, int &trW, int &trC, int &trCS)
 {
-    trCS += text.length();
+    trCS += text.size();
     bool inWord = false;
-    for (int i = 0; i < text.length(); ++i) {
+    for (int i = 0; i < text.size(); ++i) {
         if (text[i].isLetterOrNumber() || text[i] == QLatin1Char('_')) {
             if (!inWord) {
                 ++trW;
@@ -472,7 +447,7 @@ QString DataModel::prettifyPlainFileName(const QString &fn)
 {
     static QString workdir = QDir::currentPath() + QLatin1Char('/');
 
-    return QDir::toNativeSeparators(fn.startsWith(workdir) ? fn.mid(workdir.length()) : fn);
+    return QDir::toNativeSeparators(fn.startsWith(workdir) ? fn.mid(workdir.size()) : fn);
 }
 
 QString DataModel::prettifyFileName(const QString &fn)
@@ -496,7 +471,7 @@ DataModelIterator::DataModelIterator(DataModel *model, int context, int message)
 
 bool DataModelIterator::isValid() const
 {
-    return m_context < m_model->m_contextList.count();
+    return m_context < m_model->m_contextList.size();
 }
 
 void DataModelIterator::operator++()
@@ -604,9 +579,9 @@ void MultiContextItem::putMessageItem(int pos, MessageItem *m)
 void MultiContextItem::appendMessageItems(const QList<MessageItem *> &m)
 {
     QList<MessageItem *> nullItems = m; // Basically, just a reservation
-    for (int i = 0; i < nullItems.count(); ++i)
+    for (int i = 0; i < nullItems.size(); ++i)
         nullItems[i] = 0;
-    for (int i = 0; i < m_messageLists.count() - 1; ++i)
+    for (int i = 0; i < m_messageLists.size() - 1; ++i)
         m_messageLists[i] += nullItems;
     m_messageLists.last() += m;
     for (MessageItem *mi : m)
@@ -615,7 +590,7 @@ void MultiContextItem::appendMessageItems(const QList<MessageItem *> &m)
 
 void MultiContextItem::removeMultiMessageItem(int pos)
 {
-    for (int i = 0; i < m_messageLists.count(); ++i)
+    for (int i = 0; i < m_messageLists.size(); ++i)
         m_messageLists[i].removeAt(pos);
     m_multiMessageList.removeAt(pos);
 }
@@ -798,7 +773,7 @@ void MultiDataModel::append(DataModel *dm, bool readWrite)
 
 void MultiDataModel::close(int model)
 {
-    if (m_dataModels.count() == 1) {
+    if (m_dataModels.size() == 1) {
         closeAll();
     } else {
         updateCountsOnRemove(model, isModelWritable(model));
@@ -870,34 +845,34 @@ QString MultiDataModel::condenseFileNames(const QStringList &names)
     if (names.isEmpty())
         return QString();
 
-    if (names.count() < 2)
+    if (names.size() < 2)
         return names.first();
 
     QString prefix = names.first();
     if (prefix.startsWith(QLatin1Char('=')))
         prefix.remove(0, 1);
     QString suffix = prefix;
-    for (int i = 1; i < names.count(); ++i) {
+    for (int i = 1; i < names.size(); ++i) {
         QString fn = names[i];
         if (fn.startsWith(QLatin1Char('=')))
             fn.remove(0, 1);
-        for (int j = 0; j < prefix.length(); ++j)
+        for (int j = 0; j < prefix.size(); ++j)
             if (fn[j] != prefix[j]) {
-                if (j < prefix.length()) {
+                if (j < prefix.size()) {
                     while (j > 0 && prefix[j - 1].isLetterOrNumber())
                         --j;
                     prefix.truncate(j);
                 }
                 break;
             }
-        int fnl = fn.length() - 1;
-        int sxl = suffix.length() - 1;
+        int fnl = fn.size() - 1;
+        int sxl = suffix.size() - 1;
         for (int k = 0; k <= sxl; ++k)
             if (fn[fnl - k] != suffix[sxl - k]) {
                 if (k < sxl) {
                     while (k > 0 && suffix[sxl - k + 1].isLetterOrNumber())
                         --k;
-                    if (prefix.length() + k > fnl)
+                    if (prefix.size() + k > fnl)
                         --k;
                     suffix.remove(0, sxl - k + 1);
                 }
@@ -905,9 +880,9 @@ QString MultiDataModel::condenseFileNames(const QStringList &names)
             }
     }
     QString ret = prefix + QLatin1Char('{');
-    int pxl = prefix.length();
-    int sxl = suffix.length();
-    for (int j = 0; j < names.count(); ++j) {
+    int pxl = prefix.size();
+    int sxl = suffix.size();
+    for (int j = 0; j < names.size(); ++j) {
         if (j)
             ret += QLatin1Char(',');
         int off = pxl;
@@ -916,7 +891,7 @@ QString MultiDataModel::condenseFileNames(const QStringList &names)
             ret += QLatin1Char('=');
             ++off;
         }
-        ret += fn.mid(off, fn.length() - sxl - off);
+        ret += fn.mid(off, fn.size() - sxl - off);
     }
     ret += QLatin1Char('}') + suffix;
     return ret;
@@ -1184,7 +1159,7 @@ void MultiDataModelIterator::operator++()
 
 bool MultiDataModelIterator::isValid() const
 {
-    return m_context < m_dataModel->m_multiContextList.count();
+    return m_context < m_dataModel->m_multiContextList.size();
 }
 
 MessageItem *MultiDataModelIterator::current() const

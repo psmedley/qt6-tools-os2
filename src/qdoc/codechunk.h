@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2019 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the tools applications of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2019 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #ifndef CODECHUNK_H
 #define CODECHUNK_H
@@ -44,7 +19,7 @@ public:
     void appendHotspot()
     {
         if (m_hotspot == -1)
-            m_hotspot = m_str.length();
+            m_hotspot = m_str.size();
     }
 
     [[nodiscard]] bool isEmpty() const { return m_str.isEmpty(); }
@@ -52,11 +27,11 @@ public:
     [[nodiscard]] QString toString() const { return m_str; }
     [[nodiscard]] QString left() const
     {
-        return m_str.left(m_hotspot == -1 ? m_str.length() : m_hotspot);
+        return m_str.left(m_hotspot == -1 ? m_str.size() : m_hotspot);
     }
     [[nodiscard]] QString right() const
     {
-        return m_str.mid(m_hotspot == -1 ? m_str.length() : m_hotspot);
+        return m_str.mid(m_hotspot == -1 ? m_str.size() : m_hotspot);
     }
 
 private:

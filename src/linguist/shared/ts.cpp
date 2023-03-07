@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Linguist of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "translator.h"
 
@@ -102,7 +77,7 @@ void TSReader::handleError()
     case Characters:
         {
             QString tok = text().toString();
-            if (tok.length() > 30)
+            if (tok.size() > 30)
                 tok = tok.left(30) + QLatin1String("[...]");
             raiseError(QString::fromLatin1("Unexpected characters '%1' %2").arg(tok, loc));
         }
@@ -439,7 +414,7 @@ static QString numericEntity(int ch)
 static QString protect(const QString &str)
 {
     QString result;
-    result.reserve(str.length() * 12 / 10);
+    result.reserve(str.size() * 12 / 10);
     for (int i = 0; i != str.size(); ++i) {
         const QChar ch = str[i];
         uint c = ch.unicode();
@@ -481,7 +456,7 @@ static void writeExtras(QTextStream &t, const char *indent,
         }
     }
     outs.sort();
-    for (const QString &out : qAsConst(outs))
+    for (const QString &out : std::as_const(outs))
         t << indent << out << Qt::endl;
 }
 
@@ -495,12 +470,12 @@ static void writeVariants(QTextStream &t, const char *indent, const QString &inp
             t << "\n    " << indent << "<lengthvariant>"
               << protect(input.mid(start, offset - start))
               << "</lengthvariant>";
-            if (offset == input.length())
+            if (offset == input.size())
                 break;
             start = offset + 1;
             offset = input.indexOf(QChar(Translator::BinaryVariantSeparator), start);
             if (offset < 0)
-                offset = input.length();
+                offset = input.size();
         }
         t << "\n" << indent;
     } else {
@@ -557,12 +532,12 @@ bool saveTS(const Translator &translator, QIODevice &dev, ConversionData &cd)
 
     QHash<QString, int> currentLine;
     QString currentFile;
-    for (const QString &context : qAsConst(contextOrder)) {
+    for (const QString &context : std::as_const(contextOrder)) {
         t << "<context>\n"
              "    <name>"
           << protect(context)
           << "</name>\n";
-        for (const TranslatorMessage &msg : qAsConst(messageOrder[context])) {
+        for (const TranslatorMessage &msg : std::as_const(messageOrder[context])) {
             //msg.dump();
 
                 t << "    <message";
@@ -643,7 +618,7 @@ bool saveTS(const Translator &translator, QIODevice &dev, ConversionData &cd)
                 if (msg.isPlural()) {
                     t << ">";
                     const QStringList &translns = msg.translations();
-                    for (int j = 0; j < translns.count(); ++j) {
+                    for (int j = 0; j < translns.size(); ++j) {
                         t << "\n            <numerusform";
                         writeVariants(t, "            ", translns[j]);
                         t << "</numerusform>";

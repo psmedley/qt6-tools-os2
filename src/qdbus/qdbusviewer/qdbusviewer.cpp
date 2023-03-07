@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the tools applications of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "qdbusviewer.h"
 #include "qdbusmodel.h"
@@ -141,6 +116,7 @@ QDBusViewer::QDBusViewer(const QDBusConnection &connection, QWidget *parent)  :
 
     QWidget *servicesWidget = new QWidget;
     QVBoxLayout *servicesLayout = new QVBoxLayout(servicesWidget);
+    servicesLayout->setContentsMargins(QMargins());
     servicesLayout->addWidget(serviceFilterLine);
     servicesLayout->addWidget(servicesView);
     splitter->addWidget(servicesWidget);
@@ -305,7 +281,7 @@ void QDBusViewer::callMethod(const BusSignature &sig)
     QMetaMethod method;
     for (int i = 0; i < mo->methodCount(); ++i) {
         const QString signature = QString::fromLatin1(mo->method(i).methodSignature());
-        if (signature.startsWith(sig.mName) && signature.at(sig.mName.length()) == QLatin1Char('('))
+        if (signature.startsWith(sig.mName) && signature.at(sig.mName.size()) == QLatin1Char('('))
             if (getDbusSignature(mo->method(i)) == sig.mTypeSig)
                 method = mo->method(i);
     }
@@ -322,7 +298,7 @@ void QDBusViewer::callMethod(const BusSignature &sig)
     const QList<QByteArray> paramTypes = method.parameterTypes();
     const QList<QByteArray> paramNames = method.parameterNames();
     QList<int> types; // remember the low-level D-Bus type
-    for (int i = 0; i < paramTypes.count(); ++i) {
+    for (int i = 0; i < paramTypes.size(); ++i) {
         const QByteArray paramType = paramTypes.at(i);
         if (paramType.endsWith('&'))
             continue; // ignore OUT parameters
@@ -343,7 +319,7 @@ void QDBusViewer::callMethod(const BusSignature &sig)
 
     // Try to convert the values we got as closely as possible to the
     // dbus signature. This is especially important for those input as strings
-    for (int i = 0; i < args.count(); ++i) {
+    for (int i = 0; i < args.size(); ++i) {
         QVariant a = args.at(i);
         int desttype = types.at(i);
         if (desttype < int(QMetaType::User) && desttype != qMetaTypeId<QVariantMap>()) {
@@ -469,7 +445,7 @@ void QDBusViewer::dumpMessage(const QDBusMessage &message)
         out += QLatin1String("&nbsp;&nbsp;(no arguments)");
     } else {
         out += QLatin1String("&nbsp;&nbsp;Arguments: ");
-        for (const QVariant &arg : qAsConst(args)) {
+        for (const QVariant &arg : std::as_const(args)) {
             QString str = QDBusUtil::argumentToString(arg).toHtmlEscaped();
             // turn object paths into clickable links
             str.replace(objectPathRegExp, QLatin1String("[ObjectPath: <a href=\"qdbus://bus\\1\">\\1</a>]"));

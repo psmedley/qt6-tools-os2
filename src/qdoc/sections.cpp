@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2021 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the tools applications of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2021 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "sections.h"
 
@@ -136,7 +111,7 @@ QString Section::sortName(const Node *node, const QString *name)
                 sortNo = QLatin1String("C");
             else if (fn->isDtor())
                 sortNo = QLatin1String("D");
-            else if (nodeName.startsWith(QLatin1String("operator")) && nodeName.length() > 8
+            else if (nodeName.startsWith(QLatin1String("operator")) && nodeName.size() > 8
                      && !nodeName[8].isLetterOrNumber())
                 sortNo = QLatin1String("F");
             else
@@ -200,7 +175,7 @@ void Section::insert(Node *node)
             if (inherited && (node->parent()->isClassNode() || node->parent()->isNamespace())) {
                 if (m_inheritedMembers.isEmpty()
                     || m_inheritedMembers.last().first != node->parent()) {
-                    QPair<Aggregate *, int> p(node->parent(), 0);
+                    std::pair<Aggregate *, int> p(node->parent(), 0);
                     m_inheritedMembers.append(p);
                 }
                 m_inheritedMembers.last().second++;
@@ -312,7 +287,7 @@ Sections::Sections(Aggregate *aggregate) : m_aggregate(aggregate)
     case Node::JsType:
     case Node::JsBasicType:
     case Node::QmlType:
-    case Node::QmlBasicType:
+    case Node::QmlValueType:
         initAggregate(s_stdQmlTypeSummarySections, m_aggregate);
         initAggregate(s_stdQmlTypeDetailsSections, m_aggregate);
         buildStdQmlTypeRefPageSections();
@@ -435,7 +410,7 @@ Sections::~Sections()
         case Node::JsType:
         case Node::JsBasicType:
         case Node::QmlType:
-        case Node::QmlBasicType:
+        case Node::QmlValueType:
             clear(stdQmlTypeSummarySections());
             clear(stdQmlTypeDetailsSections());
             allMembersSection().clear();
@@ -636,7 +611,7 @@ void Sections::stdRefPageSwitch(SectionVector &v, Node *n, Node *t)
         return;
     case Node::SharedComment: {
         auto *scn = static_cast<SharedCommentNode *>(t);
-        if (!scn->doc().isEmpty() && scn->collective().count())
+        if (!scn->doc().isEmpty() && scn->collective().size())
             stdRefPageSwitch(
                     v, scn,
                     scn->collective().first()); // TODO: warn about mixed node types in collective?
@@ -801,7 +776,7 @@ void Sections::distributeNodeInDetailsVector(SectionVector &dv, Node *n)
 
     if (n->isSharedCommentNode() && n->hasDoc()) {
         auto *scn = static_cast<SharedCommentNode *>(n);
-        if (scn->collective().count())
+        if (scn->collective().size())
             t = scn->collective().first(); // TODO: warn about mixed node types in collective?
     }
 
@@ -850,7 +825,7 @@ void Sections::distributeQmlNodeInDetailsVector(SectionVector &dv, Node *n)
             return;
         }
         auto *scn = static_cast<SharedCommentNode *>(n);
-        if (scn->collective().count())
+        if (scn->collective().size())
             t = scn->collective().first(); // TODO: warn about mixed node types in collective?
     }
 

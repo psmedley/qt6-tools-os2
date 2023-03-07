@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Designer of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "buddyeditor.h"
 
@@ -183,11 +158,11 @@ void BuddyEditor::updateBackground()
     if (!toRemove.isEmpty()) {
         DeleteConnectionsCommand command(this, toRemove);
         command.redo();
-        for (Connection *con : qAsConst(toRemove))
+        for (Connection *con : std::as_const(toRemove))
             delete takeConnection(con);
     }
 
-    for (Connection *newConn : qAsConst(newList)) {
+    for (Connection *newConn : std::as_const(newList)) {
         bool found = false;
         const int c = connectionCount();
         for (int i = 0; i < c; i++) {
@@ -278,7 +253,7 @@ void BuddyEditor::widgetRemoved(QWidget *widget)
     child_list.prepend(widget);
 
     ConnectionSet remove_set;
-    for (QWidget *w : qAsConst(child_list)) {
+    for (QWidget *w : std::as_const(child_list)) {
         const ConnectionList &cl = connectionList();
         for (Connection *con : cl) {
             if (con->widget(EndPoint::Source) == w || con->widget(EndPoint::Target) == w)
@@ -288,7 +263,7 @@ void BuddyEditor::widgetRemoved(QWidget *widget)
 
     if (!remove_set.isEmpty()) {
         undoStack()->beginMacro(tr("Remove buddies"));
-        for (Connection *con : qAsConst(remove_set)) {
+        for (Connection *con : std::as_const(remove_set)) {
             setSelected(con, false);
             con->update();
             QWidget *source = con->widget(EndPoint::Source);

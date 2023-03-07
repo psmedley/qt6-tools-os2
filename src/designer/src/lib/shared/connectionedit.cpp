@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Designer of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 
 #include "connectionedit_p.h"
@@ -205,7 +180,7 @@ DeleteConnectionsCommand::DeleteConnectionsCommand(ConnectionEdit *edit,
 
 void DeleteConnectionsCommand::redo()
 {
-    for (Connection *con : qAsConst(m_con_list)) {
+    for (Connection *con : std::as_const(m_con_list)) {
         const int idx = edit()->indexOfConnection(con);
         emit edit()->aboutToRemoveConnection(con);
         Q_ASSERT(edit()->m_con_list.contains(con));
@@ -219,7 +194,7 @@ void DeleteConnectionsCommand::redo()
 
 void DeleteConnectionsCommand::undo()
 {
-    for (Connection *con : qAsConst(m_con_list)) {
+    for (Connection *con : std::as_const(m_con_list)) {
         Q_ASSERT(!edit()->m_con_list.contains(con));
         emit edit()->aboutToAddConnection(edit()->m_con_list.size());
         edit()->m_con_list.append(con);
@@ -985,7 +960,7 @@ void ConnectionEdit::updateBackground()
     if (!m_enable_update_background)
         return;
 
-    for (Connection *c : qAsConst(m_con_list))
+    for (Connection *c : std::as_const(m_con_list))
         c->updateVisibility();
 
     updateLines();
@@ -1063,7 +1038,7 @@ void ConnectionEdit::paintEvent(QPaintEvent *e)
 
     WidgetSet heavy_highlight_set, light_highlight_set;
 
-    for (Connection *con : qAsConst(m_con_list)) {
+    for (Connection *con : std::as_const(m_con_list)) {
         if (!con->isVisible())
             continue;
 
@@ -1081,7 +1056,7 @@ void ConnectionEdit::paintEvent(QPaintEvent *e)
     c.setAlpha(BG_ALPHA);
     p.setBrush(c);
 
-    for (QWidget *w : qAsConst(heavy_highlight_set)) {
+    for (QWidget *w : std::as_const(heavy_highlight_set)) {
         p.drawRect(fixRect(widgetRect(w)));
         light_highlight_set.remove(w);
     }
@@ -1091,12 +1066,12 @@ void ConnectionEdit::paintEvent(QPaintEvent *e)
     c.setAlpha(BG_ALPHA);
     p.setBrush(c);
 
-    for (QWidget *w : qAsConst(light_highlight_set))
+    for (QWidget *w : std::as_const(light_highlight_set))
         p.drawRect(fixRect(widgetRect(w)));
 
     p.setBrush(palette().color(QPalette::Base));
     p.setPen(palette().color(QPalette::Text));
-    for (Connection *con : qAsConst(m_con_list)) {
+    for (Connection *con : std::as_const(m_con_list)) {
         if (con->isVisible()) {
             paintLabel(&p, EndPoint::Source, con);
             paintLabel(&p, EndPoint::Target, con);
@@ -1106,7 +1081,7 @@ void ConnectionEdit::paintEvent(QPaintEvent *e)
     p.setPen(m_active_color);
     p.setBrush(m_active_color);
 
-    for (Connection *con : qAsConst(m_con_list)) {
+    for (Connection *con : std::as_const(m_con_list)) {
         if (!selected(con) || !con->isVisible())
             continue;
 
@@ -1427,7 +1402,7 @@ bool ConnectionEdit::selected(const Connection *con) const
 
 void ConnectionEdit::selectNone()
 {
-    for (Connection *con : qAsConst(m_sel_con_set))
+    for (Connection *con : std::as_const(m_sel_con_set))
         con->update();
 
     m_sel_con_set.clear();
@@ -1437,7 +1412,7 @@ void ConnectionEdit::selectAll()
 {
     if (m_sel_con_set.size() == m_con_list.size())
         return;
-    for (Connection *con : qAsConst(m_con_list))
+    for (Connection *con : std::as_const(m_con_list))
         setSelected(con, true);
 }
 
@@ -1516,7 +1491,7 @@ void ConnectionEdit::addConnection(Connection *con)
 
 void ConnectionEdit::updateLines()
 {
-    for (Connection *con : qAsConst(m_con_list))
+    for (Connection *con : std::as_const(m_con_list))
         con->checkWidgets();
 }
 

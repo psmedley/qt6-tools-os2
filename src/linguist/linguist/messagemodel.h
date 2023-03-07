@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Linguist of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #ifndef MESSAGEMODEL_H
 #define MESSAGEMODEL_H
@@ -109,7 +84,7 @@ public:
     bool isFinished() const { return unfinishedCount() == 0; }
 
     MessageItem *messageItem(int i) const;
-    int messageCount() const { return msgItemList.count(); }
+    int messageCount() const { return msgItemList.size(); }
 
     MessageItem *findMessage(const QString &sourcetext, const QString &comment) const;
 
@@ -172,7 +147,7 @@ public:
     enum FindLocation { NoLocation = 0, SourceText = 0x1, Translations = 0x2, Comments = 0x4 };
 
     // Specializations
-    int contextCount() const { return m_contextList.count(); }
+    int contextCount() const { return m_contextList.size(); }
     ContextItem *findContext(const QString &context) const;
     MessageItem *findMessage(const QString &context, const QString &sourcetext,
         const QString &comment) const;
@@ -309,7 +284,7 @@ public:
 
     QString context() const { return m_context; }
     QString comment() const { return m_comment; }
-    int messageCount() const { return m_messageLists.isEmpty() ? 0 : m_messageLists[0].count(); }
+    int messageCount() const { return m_messageLists.isEmpty() ? 0 : m_messageLists[0].size(); }
     // For item count in context list
     int getNumFinished() const { return m_finishedCount; }
     int getNumEditable() const { return m_editableCount; }
@@ -402,8 +377,8 @@ public:
     void moveModel(int oldPos, int newPos); // newPos is *before* removing at oldPos; note that this does not emit update signals
 
     // Entire multi-model
-    int modelCount() const { return m_dataModels.count(); }
-    int contextCount() const { return m_multiContextList.count(); }
+    int modelCount() const { return m_dataModels.size(); }
+    int contextCount() const { return m_multiContextList.size(); }
     int messageCount() const { return m_numMessages; }
     // Next two needed for progress indicator in main window
     int getNumFinished() const { return m_numFinished; }

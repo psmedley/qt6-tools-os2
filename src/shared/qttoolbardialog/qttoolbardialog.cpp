@@ -1,41 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the tools applications of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:LGPL$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU Lesser General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU Lesser
-** General Public License version 3 as published by the Free Software
-** Foundation and appearing in the file LICENSE.LGPL3 included in the
-** packaging of this file. Please review the following information to
-** ensure the GNU Lesser General Public License version 3 requirements
-** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 2.0 or (at your option) the GNU General
-** Public license version 3 or any later version approved by the KDE Free
-** Qt Foundation. The licenses are as published by the Free Software
-** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-2.0.html and
-** https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
 #include "qttoolbardialog.h"
 #include "ui_qttoolbardialog.h"
@@ -49,6 +13,7 @@
 #include <QtGui/QtEvents>
 
 #include <QtCore/QSet>
+#include <QtCore/QMap>
 
 #include <algorithm>
 
@@ -195,7 +160,7 @@ void QtFullToolBarManagerPrivate::removeWidgetActions(const QMap<QToolBar *, QLi
 
         toolBars.insert(toolBar, newActions);
         toolBarsWithSeparators.insert(toolBar, newActionsWithSeparators);
-        for (QAction *oldAction : qAsConst(removedActions)) {
+        for (QAction *oldAction : std::as_const(removedActions)) {
             widgetActions.insert(oldAction, 0);
             actionToToolBars[oldAction].removeAll(toolBar);
         }
@@ -347,7 +312,7 @@ bool QtFullToolBarManagerPrivate::restoreState(QDataStream &stream) const
             q_ptr->setToolBar(toolBar, actions);
         }
     }
-    for (QToolBar *toolBar : qAsConst(oldCustomToolBars))
+    for (QToolBar *toolBar : std::as_const(oldCustomToolBars))
         q_ptr->deleteToolBar(toolBar);
     return true;
 }
@@ -683,7 +648,7 @@ void QtFullToolBarManager::setToolBar(QToolBar *toolBar, const QList<QAction *> 
     }
 
     QList<QAction *> newActionsWithSeparators;
-    for (QAction *action : qAsConst(newActions)) {
+    for (QAction *action : std::as_const(newActions)) {
         QAction *newAction = nullptr;
         if (!action)
             newAction = toolBar->insertSeparator(0);
@@ -1100,7 +1065,7 @@ void QtToolBarDialogPrivate::fillNew()
             item = new QTreeWidgetItem(categoryItem);
             item->setText(0, action->text());
             item->setIcon(0, action->icon());
-            item->setTextAlignment(0, Qt::AlignLeft | Qt::AlignVCenter | Qt::TextShowMnemonic);
+            item->setTextAlignment(0, Qt::Alignment(Qt::AlignLeft | Qt::AlignVCenter | Qt::TextShowMnemonic));
             actionToItem.insert(action, item);
             itemToAction.insert(item, action);
             if (toolBarManager->isWidgetAction(action)) {
@@ -1219,7 +1184,7 @@ void QtToolBarDialogPrivate::removeToolBar(ToolBarItem *item)
     int row = ui.toolBarList->row(i);
     const auto itToolBar = toolBarToWidgetActions.find(item);
     if (itToolBar != toolBarToWidgetActions.end()) {
-        for (QAction *action : qAsConst(itToolBar.value()))
+        for (QAction *action : std::as_const(itToolBar.value()))
             widgetActionToToolBar.insert(action, 0);
         toolBarToWidgetActions.erase(itToolBar);
     }
@@ -1263,7 +1228,7 @@ void QtToolBarDialogPrivate::defaultClicked()
 
         const auto tbwit = toolBarToWidgetActions.find(toolBarItem);
         if (tbwit != toolBarToWidgetActions.end()) {
-            for (QAction *action : qAsConst(tbwit.value()))
+            for (QAction *action : std::as_const(tbwit.value()))
                 widgetActionToToolBar.insert(action, 0);
             toolBarToWidgetActions.erase(tbwit);
         }
@@ -1426,7 +1391,7 @@ void QtToolBarDialogPrivate::rightClicked()
         } else {
             item = new QListWidgetItem(action->text());
             item->setIcon(action->icon());
-            item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter | Qt::TextShowMnemonic);
+            item->setTextAlignment(Qt::Alignment(Qt::AlignLeft | Qt::AlignVCenter | Qt::TextShowMnemonic));
             currentItemToAction.insert(item, action);
             actionToCurrentItem.insert(action, item);
             if (widgetActionToToolBar.contains(action)) {
@@ -1507,7 +1472,7 @@ void QtToolBarDialogPrivate::currentToolBarChanged(QListWidgetItem *current)
         QListWidgetItem *item = new QListWidgetItem(actionName, ui.currentToolBarList);
         if (action) {
             item->setIcon(action->icon());
-            item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter | Qt::TextShowMnemonic);
+            item->setTextAlignment(Qt::Alignment(Qt::AlignLeft | Qt::AlignVCenter | Qt::TextShowMnemonic));
             actionToCurrentItem.insert(action, item);
             if (widgetActionToToolBar.contains(action))
                 item->setData(Qt::ForegroundRole, QColor(Qt::blue));

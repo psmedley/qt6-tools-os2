@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the tools applications of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "qdbusmodel.h"
 
@@ -57,7 +32,7 @@ struct QDBusItem
             s.prepend(item->name);
             item = item->parent;
         }
-        if (s.length() > 1)
+        if (s.size() > 1)
             s.chop(1); // remove tailing slash
         return s;
     }
@@ -185,7 +160,7 @@ QModelIndex QDBusModel::index(int row, int column, const QModelIndex &parent) co
     if (!item)
         item = root;
 
-    if (column != 0 || row < 0 || row >= item->children.count())
+    if (column != 0 || row < 0 || row >= item->children.size())
         return QModelIndex();
 
     return createIndex(row, 0, item->children.at(row));
@@ -208,7 +183,7 @@ int QDBusModel::rowCount(const QModelIndex &parent) const
     if (!item->isPrefetched)
         const_cast<QDBusModel *>(this)->addPath(item);
 
-    return item->children.count();
+    return item->children.size();
 }
 
 int QDBusModel::columnCount(const QModelIndex &) const
@@ -254,7 +229,7 @@ void QDBusModel::refresh(const QModelIndex &aIndex)
         item = root;
 
     if (!item->children.isEmpty()) {
-        beginRemoveRows(index, 0, item->children.count() - 1);
+        beginRemoveRows(index, 0, item->children.size() - 1);
         qDeleteAll(item->children);
         item->children.clear();
         endRemoveRows();
@@ -262,7 +237,7 @@ void QDBusModel::refresh(const QModelIndex &aIndex)
 
     addPath(item);
     if (!item->children.isEmpty()) {
-        beginInsertRows(index, 0, item->children.count() - 1);
+        beginInsertRows(index, 0, item->children.size() - 1);
         endInsertRows();
     }
 }
@@ -316,7 +291,7 @@ QModelIndex QDBusModel::findObject(const QDBusObjectPath &objectPath)
         childIdx = -1;
 
         // do a linear search over all the children
-        for (int i = 0; i < item->children.count(); ++i) {
+        for (int i = 0; i < item->children.size(); ++i) {
             QDBusItem *child = item->children.at(i);
             if (child->type == PathItem && child->name == branch) {
                 item = child;

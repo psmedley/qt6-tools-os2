@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Designer of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "formwindowbase_p.h"
 #include "connectionedit_p.h"
@@ -265,7 +240,7 @@ void FormWindowBase::reloadProperties()
             toolBox->setCurrentIndex(current);
         }
     }
-    for (QObject *object : qAsConst(m_d->m_reloadablePropertySheets)) {
+    for (QObject *object : std::as_const(m_d->m_reloadablePropertySheets)) {
         reloadIconResources(iconCache(), object);
     }
 }
@@ -451,7 +426,7 @@ void FormWindowBase::deleteWidgetList(const QWidgetList &widget_list)
         tr("Delete '%1'").arg(widget_list.constFirst()->objectName()) : tr("Delete");
 
     commandHistory()->beginMacro(description);
-    for (QWidget *w : qAsConst(widget_list)) {
+    for (QWidget *w : std::as_const(widget_list)) {
         emit widgetRemoved(w);
         DeleteWidgetCommand *cmd = new DeleteWidgetCommand(this);
         cmd->init(w);

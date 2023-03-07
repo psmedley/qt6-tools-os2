@@ -1,41 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Assistant of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:LGPL$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU Lesser General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU Lesser
-** General Public License version 3 as published by the Free Software
-** Foundation and appearing in the file LICENSE.LGPL3 included in the
-** packaging of this file. Please review the following information to
-** ensure the GNU Lesser General Public License version 3 requirements
-** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 2.0 or (at your option) the GNU General
-** Public license version 3 or any later version approved by the KDE Free
-** Qt Foundation. The licenses are as published by the Free Software
-** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-2.0.html and
-** https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
 #include "qhelpcollectionhandler_p.h"
 #include "qhelp_global.h"
@@ -48,6 +12,7 @@
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
 #include <QtCore/QList>
+#include <QtCore/QMultiMap>
 #include <QtCore/QTimer>
 #include <QtCore/QVersionNumber>
 
@@ -203,7 +168,7 @@ bool QHelpCollectionHandler::openCollectionFile()
 
     m_query->exec(queryString);
     m_query->next();
-    if (m_query->value(0).toInt() != newTables.count()) {
+    if (m_query->value(0).toInt() != newTables.size()) {
         if (!recreateIndexAndNamespaceFilterTables(m_query)) {
             emit error(tr("Cannot create index tables in file %1.").arg(collectionFile()));
             return false;
@@ -803,7 +768,7 @@ bool QHelpCollectionHandler::addCustomFilter(const QString &filterName,
             idsToInsert.removeAll(attributeName);
     }
 
-    for (const QString &id : qAsConst(idsToInsert)) {
+    for (const QString &id : std::as_const(idsToInsert)) {
         m_query->prepare(QLatin1String("INSERT INTO FilterAttributeTable VALUES(NULL, ?)"));
         m_query->bindValue(0, id);
         m_query->exec();
@@ -993,7 +958,7 @@ static QHelpCollectionHandler::FileInfo extractFileInfo(const QUrl &url)
     if (fileInfo.fileName.startsWith(QLatin1Char('/')))
         fileInfo.fileName = fileInfo.fileName.mid(1);
     fileInfo.folderName = fileInfo.fileName.mid(0, fileInfo.fileName.indexOf(QLatin1Char('/'), 1));
-    fileInfo.fileName.remove(0, fileInfo.folderName.length() + 1);
+    fileInfo.fileName.remove(0, fileInfo.folderName.size() + 1);
 
     return fileInfo;
 }
@@ -1136,8 +1101,8 @@ static QString prepareFilterQuery(int attributesCount,
 void bindFilterQuery(QSqlQuery *query, int startingBindPos, const QStringList &filterAttributes)
 {
     for (int i = 0; i < 2; ++i) {
-        for (int j = 0; j < filterAttributes.count(); j++) {
-            query->bindValue(i * filterAttributes.count() + j + startingBindPos,
+        for (int j = 0; j < filterAttributes.size(); j++) {
+            query->bindValue(i * filterAttributes.size() + j + startingBindPos,
                              filterAttributes.at(j));
         }
     }
@@ -1166,7 +1131,7 @@ QString QHelpCollectionHandler::namespaceForFile(const QUrl &url,
                 "AND FolderTable.NamespaceId = NamespaceTable.Id");
 
     const QString filterQuery = filterlessQuery
-            + prepareFilterQuery(filterAttributes.count(),
+            + prepareFilterQuery(filterAttributes.size(),
                                  QLatin1String("FileNameTable"),
                                  QLatin1String("FileId"),
                                  QLatin1String("FileFilterTable"),
@@ -1279,7 +1244,7 @@ QStringList QHelpCollectionHandler::files(const QString &namespaceName,
                 "AND NamespaceTable.Name = ?") + extensionQuery;
 
     const QString filterQuery = filterlessQuery
-            + prepareFilterQuery(filterAttributes.count(),
+            + prepareFilterQuery(filterAttributes.size(),
                                  QLatin1String("FileNameTable"),
                                  QLatin1String("FileId"),
                                  QLatin1String("FileFilterTable"),
@@ -1424,7 +1389,7 @@ QStringList QHelpCollectionHandler::indicesForFilter(const QStringList &filterAt
                 "AND IndexTable.NamespaceId = NamespaceTable.Id");
 
     const QString filterQuery = filterlessQuery
-            + prepareFilterQuery(filterAttributes.count(),
+            + prepareFilterQuery(filterAttributes.size(),
                                  QLatin1String("IndexTable"),
                                  QLatin1String("Id"),
                                  QLatin1String("IndexFilterTable"),
@@ -1518,7 +1483,7 @@ QList<QHelpCollectionHandler::ContentsData> QHelpCollectionHandler::contentsForF
                 "AND VersionTable.NamespaceId = NamespaceTable.Id");
 
     const QString filterQuery = filterlessQuery
-            + prepareFilterQuery(filterAttributes.count(),
+            + prepareFilterQuery(filterAttributes.size(),
                                  QLatin1String("ContentsTable"),
                                  QLatin1String("Id"),
                                  QLatin1String("ContentsFilterTable"),
@@ -1546,7 +1511,7 @@ QList<QHelpCollectionHandler::ContentsData> QHelpCollectionHandler::contentsForF
     }
 
     QList<QHelpCollectionHandler::ContentsData> result;
-    for (const auto &versionContents : qAsConst(contentsMap)) {
+    for (const auto &versionContents : std::as_const(contentsMap)) {
         // insert items in the reverse order of version number
         const auto itBegin = versionContents.constBegin();
         auto it = versionContents.constEnd();
@@ -1605,7 +1570,7 @@ QList<QHelpCollectionHandler::ContentsData> QHelpCollectionHandler::contentsForF
     }
 
     QList<QHelpCollectionHandler::ContentsData> result;
-    for (const auto &versionContents : qAsConst(contentsMap)) {
+    for (const auto &versionContents : std::as_const(contentsMap)) {
         // insert items in the reverse order of version number
         const auto itBegin = versionContents.constBegin();
         auto it = versionContents.constEnd();
@@ -2045,7 +2010,7 @@ bool QHelpCollectionHandler::registerIndexTable(const QHelpDBReader::IndexTable 
         const int attributeId = m_query->value(0).toInt();
 
         QVariantList attributeIds;
-        for (int i = 0; i < it.value().count(); i++)
+        for (int i = 0; i < it.value().size(); i++)
             attributeIds.append(attributeId);
 
         m_query->prepare(QLatin1String("INSERT INTO FileFilterTable VALUES(?, ?)"));
@@ -2107,7 +2072,7 @@ bool QHelpCollectionHandler::registerIndexTable(const QHelpDBReader::IndexTable 
         const int attributeId = m_query->value(0).toInt();
 
         QVariantList attributeIds;
-        for (int i = 0; i < it.value().count(); i++)
+        for (int i = 0; i < it.value().size(); i++)
             attributeIds.append(attributeId);
 
         m_query->prepare(QLatin1String("INSERT INTO IndexFilterTable VALUES(?, ?)"));
@@ -2159,7 +2124,7 @@ bool QHelpCollectionHandler::registerIndexTable(const QHelpDBReader::IndexTable 
         const int attributeId = m_query->value(0).toInt();
 
         QVariantList attributeIds;
-        for (int i = 0; i < it.value().count(); i++)
+        for (int i = 0; i < it.value().size(); i++)
             attributeIds.append(attributeId);
 
         m_query->prepare(QLatin1String("INSERT INTO ContentsFilterTable VALUES(?, ?)"));
@@ -2378,7 +2343,7 @@ QList<QHelpLink> QHelpCollectionHandler::documentsForField(
                 "AND IndexTable.%1 = ?").arg(fieldName);
 
     const QString filterQuery = filterlessQuery
-            + prepareFilterQuery(filterAttributes.count(),
+            + prepareFilterQuery(filterAttributes.size(),
                                  QLatin1String("IndexTable"),
                                  QLatin1String("Id"),
                                  QLatin1String("IndexFilterTable"),

@@ -1,41 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the tools applications of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:LGPL$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU Lesser General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU Lesser
-** General Public License version 3 as published by the Free Software
-** Foundation and appearing in the file LICENSE.LGPL3 included in the
-** packaging of this file. Please review the following information to
-** ensure the GNU Lesser General Public License version 3 requirements
-** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 2.0 or (at your option) the GNU General
-** Public license version 3 or any later version approved by the KDE Free
-** Qt Foundation. The licenses are as published by the Free Software
-** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-2.0.html and
-** https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
 #include "deviceskin.h"
 
@@ -117,7 +81,7 @@ bool DeviceSkinParameters::read(const QString &skinDirectory,  ReadMode rm,  QSt
     // Figure out the name. remove ending '/' if present
     QString skinFile = skinDirectory;
     if (skinFile.endsWith(QLatin1Char('/')))
-        skinFile.truncate(skinFile.length() - 1);
+        skinFile.truncate(skinFile.size() - 1);
 
     QFileInfo fi(skinFile);
     QString fn;
@@ -180,7 +144,7 @@ bool DeviceSkinParameters::read(QTextStream &ts, ReadMode rm, QString *errorMess
                 if ( eq >= 0 ) {
                     const QString key = line.left(eq);
                     eq++;
-                    while (eq<line.length()-1 && line[eq].isSpace())
+                    while (eq<line.size()-1 && line[eq].isSpace())
                         eq++;
                     const QString value = line.mid(eq);
                     if ( key == UpKey ) {
@@ -293,7 +257,7 @@ bool DeviceSkinParameters::read(QTextStream &ts, ReadMode rm, QString *errorMess
         const QString line = ts.readLine();
         if ( !line.isEmpty() && line[0] != QLatin1Char('#') ) {
             const QStringList tok = line.split(splitRe);
-            if ( tok.count()<6 ) {
+            if ( tok.size()<6 ) {
                 *errorMessage =  DeviceSkin::tr("Syntax error in area definition: %1").arg(line);
                 return false;
             } else {
@@ -306,7 +270,7 @@ bool DeviceSkinParameters::read(QTextStream &ts, ReadMode rm, QString *errorMess
                 }
 
                 int p=0;
-                for (int j=2; j < tok.count() - 1; ) {
+                for (int j=2; j < tok.size() - 1; ) {
                     const int x = tok[j++].toInt();
                     const int y = tok[j++].toInt();
                     area.area.putPoints(p++,1,x,y);
@@ -317,7 +281,7 @@ bool DeviceSkinParameters::read(QTextStream &ts, ReadMode rm, QString *errorMess
                     area.name.truncate(area.name.size() - 1);
                     area.name.remove(0, 1);
                 }
-                if ( area.name.length() == 1 )
+                if ( area.name.size() == 1 )
                     area.text = area.name;
                 if ( area.name == Joystick)
                     joystick = i;
@@ -406,8 +370,8 @@ void DeviceSkin::calcRegions()
 {
     const int numAreas = m_parameters.buttonAreas.size();
     for (int i=0; i<numAreas; i++) {
-        QPolygon xa(m_parameters.buttonAreas[i].area.count());
-        int n = m_parameters.buttonAreas[i].area.count();
+        QPolygon xa(m_parameters.buttonAreas[i].area.size());
+        int n = m_parameters.buttonAreas[i].area.size();
         for (int p = 0; p < n; p++) {
             xa.setPoint(p,transform.map(m_parameters.buttonAreas[i].area[p]));
         }
@@ -539,17 +503,17 @@ void DeviceSkin::paintEvent( QPaintEvent *)
     if ( buttonPressed == true ) {
         toDraw += buttonIndex;
     }
-    for (int toggle : qAsConst(m_parameters.toggleAreaList)) {
+    for (int toggle : std::as_const(m_parameters.toggleAreaList)) {
         const DeviceSkinButtonArea &ba = m_parameters.buttonAreas[toggle];
         if (flipped_open || ba.activeWhenClosed) {
             if (ba.toggleArea && ba.toggleActiveArea)
                 toDraw += toggle;
         }
     }
-    for (int button : qAsConst(toDraw)) {
+    for (int button : std::as_const(toDraw)) {
         const DeviceSkinButtonArea &ba = m_parameters.buttonAreas[button];
         const QRect r = buttonRegions[button].boundingRect();
-        if ( ba.area.count() > 2 )
+        if ( ba.area.size() > 2 )
             p.setClipRegion(buttonRegions[button]);
         p.drawPixmap( r.topLeft(), skinImageDown, r);
     }

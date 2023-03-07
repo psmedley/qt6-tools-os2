@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Designer of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "qdesigner_command_p.h"
 #include "qdesigner_propertycommand_p.h"
@@ -625,7 +600,7 @@ void PromoteToCustomWidgetCommand::init(const WidgetPointerList &widgets,const Q
 
 void PromoteToCustomWidgetCommand::redo()
 {
-    for (QWidget *w : qAsConst(m_widgets)) {
+    for (QWidget *w : std::as_const(m_widgets)) {
         if (w)
             promoteWidget(core(), w, m_customClassName);
     }
@@ -644,7 +619,7 @@ void PromoteToCustomWidgetCommand::updateSelection()
 
 void PromoteToCustomWidgetCommand::undo()
 {
-    for (QWidget *w : qAsConst(m_widgets)) {
+    for (QWidget *w : std::as_const(m_widgets)) {
         if (w)
             demoteWidget(core(), w);
     }
@@ -857,7 +832,7 @@ void BreakLayoutCommand::redo()
     m_layout->breakLayout();
     delete deco; // release the extension
 
-    for (QWidget *widget : qAsConst(m_widgets)) {
+    for (QWidget *widget : std::as_const(m_widgets)) {
         widget->resize(widget->size().expandedTo(QSize(16, 16)));
     }
     // Update unless we are in an intermediate state of morphing layout
@@ -2684,7 +2659,7 @@ void RemoveActionCommand::init(QAction *action)
 void RemoveActionCommand::redo()
 {
     QDesignerFormWindowInterface *fw = formWindow();
-    for (const ActionDataItem &item : qAsConst(m_actionData)) {
+    for (const ActionDataItem &item : std::as_const(m_actionData)) {
         item.widget->removeAction(m_action);
     }
     // Notify components (for example, signal slot editor)
@@ -2701,7 +2676,7 @@ void RemoveActionCommand::undo()
 {
     core()->actionEditor()->setFormWindow(formWindow());
     core()->actionEditor()->manageAction(m_action);
-    for (const ActionDataItem &item : qAsConst(m_actionData))
+    for (const ActionDataItem &item : std::as_const(m_actionData))
         item.widget->insertAction(item.before, m_action);
     if (!m_actionData.isEmpty())
         core()->objectInspector()->setFormWindow(formWindow());

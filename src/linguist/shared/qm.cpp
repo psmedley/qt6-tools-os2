@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Linguist of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "translator.h"
 
@@ -221,7 +196,7 @@ Prefix Releaser::commonPrefix(const ByteTranslatorMessage &m1, const ByteTransla
 void Releaser::writeMessage(const ByteTranslatorMessage &msg, QDataStream &stream,
     TranslatorSaveMode mode, Prefix prefix) const
 {
-    for (int i = 0; i < msg.translations().count(); ++i)
+    for (int i = 0; i < msg.translations().size(); ++i)
         stream << quint8(Tag_Translation) << msg.translations().at(i);
 
     if (mode == SaveEverything)
@@ -288,7 +263,7 @@ void Releaser::squeeze(TranslatorSaveMode mode)
 {
     m_dependencyArray.clear();
     QDataStream depstream(&m_dependencyArray, QIODevice::WriteOnly);
-    for (const QString &dep : qAsConst(m_dependencies))
+    for (const QString &dep : std::as_const(m_dependencies))
         depstream << dep;
 
     if (m_messages.isEmpty() && mode == SaveEverything)
@@ -382,7 +357,7 @@ void Releaser::squeeze(TranslatorSaveMode mode)
 
             do {
                 const char *con = entry.value().constData();
-                uint len = uint(entry.value().length());
+                uint len = uint(entry.value().size());
                 len = qMin(len, 255u);
                 t << quint8(len);
                 t.writeRawData(con, len);
@@ -528,7 +503,7 @@ bool loadQM(Translator &translator, QIODevice &dev, ConversionData &cd)
     QStringList numerusForms;
     bool guessPlurals = true;
     if (getNumerusInfo(l, c, 0, &numerusForms, 0))
-        guessPlurals = (numerusForms.count() == 1);
+        guessPlurals = (numerusForms.size() == 1);
 
     QString context, sourcetext, comment;
     QStringList translations;
@@ -559,7 +534,7 @@ bool loadQM(Translator &translator, QIODevice &dev, ConversionData &cd)
                 if (len != -1)
                     str = QString((const QChar *)m, len / 2);
                 if (QSysInfo::ByteOrder == QSysInfo::LittleEndian) {
-                    for (int i = 0; i < str.length(); ++i)
+                    for (int i = 0; i < str.size(); ++i)
                         str[i] = QChar((str.at(i).unicode() >> 8) +
                             ((str.at(i).unicode() << 8) & 0xff00));
                 }
@@ -606,7 +581,7 @@ bool loadQM(Translator &translator, QIODevice &dev, ConversionData &cd)
     end:;
         TranslatorMessage msg;
         msg.setType(TranslatorMessage::Finished);
-        if (translations.count() > 1) {
+        if (translations.size() > 1) {
             // If guessPlurals is not false here, plural form discard messages
             // will be spewn out later.
             msg.setPlural(true);

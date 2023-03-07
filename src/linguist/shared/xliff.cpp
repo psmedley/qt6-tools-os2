@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Linguist of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "translator.h"
 #include "xmlparser.h"
@@ -249,7 +224,7 @@ static void writeTransUnits(QTextStream &ts, const TranslatorMessage &msg, const
         oldsources.append(msg.oldSourceText());
     if (const auto it = extras.constFind(QString::fromLatin1("po-old_msgid_plural")); it != extrasEnd) {
         if (oldsources.isEmpty()) {
-            if (sources.count() == 2)
+            if (sources.size() == 2)
                 oldsources.append(QString());
             else
                 pluralStr = QLatin1Char(' ') + QLatin1String(attribPlural) + QLatin1String("=\"yes\"");
@@ -476,7 +451,7 @@ XLIFFHandler::XliffContext XLIFFHandler::currentContext() const
 // traverses to the top to check all of the parent contexes.
 bool XLIFFHandler::hasContext(XliffContext ctx) const
 {
-    for (int i = m_contextStack.count() - 1; i >= 0; --i) {
+    for (int i = m_contextStack.size() - 1; i >= 0; --i) {
         if (m_contextStack.at(i) == ctx)
             return true;
     }
@@ -709,12 +684,12 @@ bool XLIFFHandler::finalizeMessage(bool isPlural)
     msg.setOldComment(m_oldComment);
     msg.setExtraComment(m_extraComment);
     msg.setTranslatorComment(m_translatorComment);
-    if (m_sources.count() > 1 && m_sources[1] != m_sources[0])
+    if (m_sources.size() > 1 && m_sources[1] != m_sources[0])
         m_extra.insert(QLatin1String("po-msgid_plural"), m_sources[1]);
     if (!m_oldSources.isEmpty()) {
         if (!m_oldSources[0].isEmpty())
             msg.setOldSourceText(m_oldSources[0]);
-        if (m_oldSources.count() > 1 && m_oldSources[1] != m_oldSources[0])
+        if (m_oldSources.size() > 1 && m_oldSources[1] != m_oldSources[0])
             m_extra.insert(QLatin1String("po-old_msgid_plural"), m_oldSources[1]);
     }
     msg.setExtras(m_extra);
@@ -792,7 +767,7 @@ bool saveXLIFF(const Translator &translator, QIODevice &dev, ConversionData &cd)
         sourceLanguageCode.replace(QLatin1Char('_'), QLatin1Char('-'));
     QString languageCode = translator.languageCode();
     languageCode.replace(QLatin1Char('_'), QLatin1Char('-'));
-    for (const QString &fn : qAsConst(fileOrder)) {
+    for (const QString &fn : std::as_const(fileOrder)) {
         writeIndent(ts, indent);
         ts << "<file original=\"" << fn << "\""
             << " datatype=\"" << dataType(messageOrder[fn].cbegin()->first()) << "\""
@@ -801,7 +776,7 @@ bool saveXLIFF(const Translator &translator, QIODevice &dev, ConversionData &cd)
             << "><body>\n";
         ++indent;
 
-        for (const QString &ctx : qAsConst(contextOrder[fn])) {
+        for (const QString &ctx : std::as_const(contextOrder[fn])) {
             if (!ctx.isEmpty()) {
                 writeIndent(ts, indent);
                 ts << "<group restype=\"" << restypeContext << "\""
@@ -809,7 +784,7 @@ bool saveXLIFF(const Translator &translator, QIODevice &dev, ConversionData &cd)
                 ++indent;
             }
 
-            for (const TranslatorMessage &msg : qAsConst(messageOrder[fn][ctx]))
+            for (const TranslatorMessage &msg : std::as_const(messageOrder[fn][ctx]))
                 writeMessage(ts, msg, drops, indent);
 
             if (!ctx.isEmpty()) {

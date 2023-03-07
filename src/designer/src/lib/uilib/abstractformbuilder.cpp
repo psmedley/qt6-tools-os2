@@ -1,41 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2020 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Designer of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:LGPL$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU Lesser General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU Lesser
-** General Public License version 3 as published by the Free Software
-** Foundation and appearing in the file LICENSE.LGPL3 included in the
-** packaging of this file. Please review the following information to
-** ensure the GNU Lesser General Public License version 3 requirements
-** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 2.0 or (at your option) the GNU General
-** Public license version 3 or any later version approved by the KDE Free
-** Qt Foundation. The licenses are as published by the Free Software
-** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-2.0.html and
-** https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2020 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
 #include "abstractformbuilder.h"
 #include "formbuilderextra_p.h"
@@ -1157,7 +1121,7 @@ DomWidget *QAbstractFormBuilder::createDom(QWidget *widget, DomWidget *ui_parent
         }
     }
 
-    for (QObject *obj : qAsConst(children)) {
+    for (QObject *obj : std::as_const(children)) {
         if (QWidget *childWidget = qobject_cast<QWidget*>(obj)) {
             if (d->m_laidout.contains(childWidget) || !recursive)
                 continue;
@@ -1347,7 +1311,7 @@ DomLayout *QAbstractFormBuilder::createDom(QLayout *layout, DomLayout *ui_layout
 
     QList<DomLayoutItem *> ui_items;
     ui_items.reserve(newList.size());
-    for (const FormBuilderSaveLayoutEntry &item : qAsConst(newList)) {
+    for (const FormBuilderSaveLayoutEntry &item : std::as_const(newList)) {
         if (DomLayoutItem *ui_item = createDom(item.item, lay, ui_parentWidget)) {
             if (item.row >= 0)
                 ui_item->setAttributeRow(item.row);
@@ -1972,7 +1936,7 @@ void QAbstractFormBuilder::saveItemViewExtraInfo(const QAbstractItemView *itemVi
                 const QString upperPropertyName = realPropertyName.at(0).toUpper()
                                                   + realPropertyName.mid(1);
                 const QString fakePropertyName = headerPrefix + upperPropertyName;
-                for (DomProperty *property : qAsConst(headerProperties)) {
+                for (DomProperty *property : std::as_const(headerProperties)) {
                     if (property->attributeName() == realPropertyName) {
                         property->setAttributeName(fakePropertyName);
                         viewProperties << property;

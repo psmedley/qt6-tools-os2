@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2021 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the tools applications of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2021 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "generator.h"
 
@@ -61,14 +36,9 @@
 QT_BEGIN_NAMESPACE
 
 Generator *Generator::s_currentGenerator;
-QStringList Generator::s_exampleDirs;
-QStringList Generator::s_exampleImgExts;
 QMap<QString, QMap<QString, QString>> Generator::s_fmtLeftMaps;
 QMap<QString, QMap<QString, QString>> Generator::s_fmtRightMaps;
 QList<Generator *> Generator::s_generators;
-QStringList Generator::s_imageDirs;
-QStringList Generator::s_imageFiles;
-QMap<QString, QStringList> Generator::s_imgFileExts;
 QString Generator::s_outDir;
 QString Generator::s_outSubdir;
 QStringList Generator::s_outFileNames;
@@ -94,7 +64,8 @@ static QLatin1String quot("&quot;");
   Sets a pointer to the QDoc database singleton, which is
   available to the generator subclasses.
  */
-Generator::Generator()
+Generator::Generator(FileResolver& file_resolver)
+    : file_resolver{file_resolver}
 {
     m_qdb = QDocDatabase::qdocDB();
     s_generators.prepend(this);
@@ -179,7 +150,7 @@ int Generator::appendSortedNames(Text &text, const ClassNode *cn, const QList<Re
     const QStringList classNames = classMap.keys();
     for (const auto &className : classNames) {
         text << classMap[className];
-        text << Utilities::comma(index++, classNames.count());
+        text << Utilities::comma(index++, classNames.size());
     }
     return index;
 }
@@ -201,7 +172,7 @@ int Generator::appendSortedQmlNames(Text &text, const Node *base, const NodeList
     const QStringList names = classMap.keys();
     for (const auto &name : names) {
         text << classMap[name];
-        text << Utilities::comma(index++, names.count());
+        text << Utilities::comma(index++, names.size());
     }
     return index;
 }
@@ -326,7 +297,7 @@ QString Generator::fileBase(const Node *node) const
     if (node->isCollectionNode()) {
         base = node->name() + outputSuffix(node);
         if (base.endsWith(".html"))
-            base.truncate(base.length() - 5);
+            base.truncate(base.size() - 5);
 
         if (node->isQmlModule())
             base.append("-qmlmodule");
@@ -338,7 +309,7 @@ QString Generator::fileBase(const Node *node) const
     } else if (node->isTextPageNode()) {
         base = node->name();
         if (base.endsWith(".html"))
-            base.truncate(base.length() - 5);
+            base.truncate(base.size() - 5);
 
         if (node->isExample()) {
             base.prepend(s_project.toLower() + QLatin1Char('-'));
@@ -437,8 +408,21 @@ QString Generator::fileName(const Node *node, const QString &extension) const
     return extension.isNull() ? name + fileExtension() : name + extension;
 }
 
-QString Generator::cleanRef(const QString &ref)
+/*!
+  Clean the given \a ref to be used as an HTML anchor or an \c xml:id.
+  If \a xmlCompliant is set to \c true, a stricter process is used, as XML
+  is more rigorous in what it accepts. Otherwise, if \a xmlCompliant is set to
+  \c false, the basic HTML transformations are applied.
+
+  More specifically, only XML NCNames are allowed
+  (https://www.w3.org/TR/REC-xml-names/#NT-NCName).
+ */
+QString Generator::cleanRef(const QString &ref, bool xmlCompliant)
 {
+    // XML-compliance is ensured in two ways:
+    // - no digit (0-9) at the beginning of an ID (many IDs do not respect this property)
+    // - no colon (:) anywhere in the ID (occurs very rarely)
+
     QString clean;
 
     if (ref.isEmpty())
@@ -448,8 +432,10 @@ QString Generator::cleanRef(const QString &ref)
     const QChar c = ref[0];
     const uint u = c.unicode();
 
-    if ((u >= 'a' && u <= 'z') || (u >= 'A' && u <= 'Z') || (u >= '0' && u <= '9')) {
+    if ((u >= 'a' && u <= 'z') || (u >= 'A' && u <= 'Z') || (!xmlCompliant && u >= '0' && u <= '9')) {
         clean += c;
+    } else if (xmlCompliant && u >= '0' && u <= '9') {
+        clean += QLatin1Char('A') + c;
     } else if (u == '~') {
         clean += "dtor.";
     } else if (u == '_') {
@@ -458,11 +444,11 @@ QString Generator::cleanRef(const QString &ref)
         clean += QLatin1Char('A');
     }
 
-    for (int i = 1; i < ref.length(); i++) {
+    for (int i = 1; i < ref.size(); i++) {
         const QChar c = ref[i];
         const uint u = c.unicode();
         if ((u >= 'a' && u <= 'z') || (u >= 'A' && u <= 'Z') || (u >= '0' && u <= '9') || u == '-'
-            || u == '_' || u == ':' || u == '.') {
+            || u == '_' || (xmlCompliant && u == ':') || u == '.') {
             clean += c;
         } else if (c.isSpace()) {
             clean += QLatin1Char('-');
@@ -815,8 +801,8 @@ void Generator::generateBody(const Node *node, CodeMarker *marker)
             const auto &documentedItemList = enume->doc().enumItemNames();
             QSet<QString> documentedItems(documentedItemList.cbegin(), documentedItemList.cend());
             const QSet<QString> allItems = definedItems + documentedItems;
-            if (allItems.count() > definedItems.count()
-                || allItems.count() > documentedItems.count()) {
+            if (allItems.size() > definedItems.size()
+                || allItems.size() > documentedItems.size()) {
                 for (const auto &it : allItems) {
                     if (!definedItems.contains(it)) {
                         QString details;
@@ -949,20 +935,37 @@ void Generator::generateLinkToExample(const ExampleNode *en, CodeMarker *marker,
     generateText(text, nullptr, marker);
 }
 
-void Generator::addImageToCopy(const ExampleNode *en, const QString &file)
+void Generator::addImageToCopy(const ExampleNode *en, const ResolvedFile& resolved_file)
 {
     QDir dirInfo;
     QString userFriendlyFilePath;
-    const QString prefix("/images/used-in-examples/");
-    QString srcPath = Config::findFile(en->location(), QStringList(), s_exampleDirs, file,
-                                       s_exampleImgExts, &userFriendlyFilePath);
-    s_outFileNames << prefix.mid(1) + userFriendlyFilePath;
-    userFriendlyFilePath.truncate(userFriendlyFilePath.lastIndexOf('/'));
-    QString imgOutDir = s_outDir + prefix + userFriendlyFilePath;
+    // TODO: [uncentralized-output-directory-structure]
+    const QString prefix("/images/used-in-examples");
+
+    // TODO: Generators probably should not need to keep track of which files were generated.
+    // Understand if we really need this information and where it should
+    // belong, considering that it should be part of whichever system
+    // would actually store the file itself.
+    s_outFileNames << prefix.mid(1) + "/" + resolved_file.get_query();
+
+
+    // TODO: [uncentralized-output-directory-structure]
+    QString imgOutDir = s_outDir + prefix + "/" + QFileInfo{resolved_file.get_query()}.path();
     if (!dirInfo.mkpath(imgOutDir))
         en->location().fatal(QStringLiteral("Cannot create output directory '%1'").arg(imgOutDir));
-    Config::copyFile(en->location(), srcPath, file, imgOutDir);
+    Config::copyFile(en->location(), resolved_file.get_path(), QFileInfo{resolved_file.get_query()}.fileName(), imgOutDir);
 }
+
+// TODO: [multi-purpose-function-with-flag][generate-file-list]
+// Avoid the use of a boolean flag to dispatch to the correct
+// implementation trough branching.
+// We always have to process both images and files, such that we
+// should consider to remove the branching altogheter, performing both
+// operations in a single call.
+// Otherwise, if this turns out to be infeasible, complex or
+// possibly-confusing, consider extracting the processing code outside
+// the function and provide two higer-level dispathing functions for
+// files and images.
 
 /*!
   This function is called when the documentation for an example is
@@ -992,22 +995,33 @@ void Generator::generateFileList(const ExampleNode *en, CodeMarker *marker, bool
     text << Atom::ParaLeft << tag << Atom::ParaRight;
     text << Atom(Atom::ListLeft, openedList.styleString());
 
-    QString path;
-    for (const auto &file : qAsConst(paths)) {
-        if (images) {
-            if (!file.isEmpty())
-                addImageToCopy(en, file);
-        } else {
-            generateExampleFilePage(en, file, marker);
+    for (const auto &path : std::as_const(paths)) {
+        auto maybe_resolved_file{file_resolver.resolve(path)};
+        if (!maybe_resolved_file) {
+            // TODO: [uncentralized-admonition][failed-resolve-file]
+            QString details = std::transform_reduce(
+                file_resolver.get_search_directories().cbegin(),
+                file_resolver.get_search_directories().cend(),
+                u"Searched directories:"_qs,
+                std::plus(),
+                [](const DirectoryPath& directory_path){ return " " + directory_path.value(); }
+            );
+
+            en->location().warning(u"(Generator)Cannot find file to quote from: %1"_qs.arg(path), details);
+
+            continue;
         }
+
+        auto file{*maybe_resolved_file};
+        if (images) addImageToCopy(en, file);
+        else        generateExampleFilePage(en, file, marker);
 
         openedList.next();
         text << Atom(Atom::ListItemNumber, openedList.numberString())
              << Atom(Atom::ListItemLeft, openedList.styleString()) << Atom::ParaLeft
-             << Atom(atomType, file) << Atom(Atom::FormattingLeft, ATOM_FORMATTING_LINK) << file
+             << Atom(atomType, file.get_query()) << Atom(Atom::FormattingLeft, ATOM_FORMATTING_LINK) << file.get_query()
              << Atom(Atom::FormattingRight, ATOM_FORMATTING_LINK) << Atom::ParaRight
              << Atom(Atom::ListItemRight, openedList.styleString());
-        path = file;
     }
     text << Atom(Atom::ListRight, openedList.styleString());
     if (!paths.isEmpty())
@@ -1092,7 +1106,7 @@ void Generator::generateDocumentation(Node *node)
                 endSubPage();
             } else if (node->isQmlBasicType() || node->isJsBasicType()) {
                 beginSubPage(node, fileName(node));
-                auto *qbtn = static_cast<QmlBasicTypeNode *>(node);
+                auto *qbtn = static_cast<QmlValueTypeNode *>(node);
                 generateQmlBasicTypePage(qbtn, marker);
                 endSubPage();
             } else if (node->isProxyNode()) {
@@ -1202,7 +1216,7 @@ QString Generator::formatSince(const Node *node)
     QStringList since = node->since().split(QLatin1Char(' '));
 
     // If there is only one argument, assume it is the Qt version number.
-    if (since.count() == 1)
+    if (since.size() == 1)
         return "Qt " + since[0];
 
     // Otherwise, use the original <project> <version> string.
@@ -1301,7 +1315,7 @@ void Generator::generateAddendum(const Node *node, Addendum type, CodeMarker *ma
         if (nodes.isEmpty())
             return;
         std::sort(nodes.begin(), nodes.end(), Node::nodeNameLessThan);
-        for (const auto *n : qAsConst(nodes)) {
+        for (const auto *n : std::as_const(nodes)) {
             QString msg;
             const auto *pn = static_cast<const PropertyNode *>(n);
             switch (pn->role(fn)) {
@@ -1562,7 +1576,7 @@ void Generator::generateDocs()
 
 Generator *Generator::generatorForFormat(const QString &format)
 {
-    for (const auto &generator : qAsConst(s_generators)) {
+    for (const auto &generator : std::as_const(s_generators)) {
         if (generator->format() == format)
             return generator;
     }
@@ -1589,27 +1603,6 @@ QStringList Generator::getMetadataElements(const Aggregate *inner, const QString
     return result;
 }
 
-/*!
-  Returns a relative path name for an image.
- */
-QString Generator::imageFileName(const Node *relative, const QString &fileBase)
-{
-    QString userFriendlyFilePath;
-    QString filePath = Config::findFile(relative->doc().location(), s_imageFiles, s_imageDirs,
-                                        fileBase, s_imgFileExts[format()], &userFriendlyFilePath);
-
-    if (filePath.isEmpty())
-        return QString();
-
-    QString path = Config::copyFile(relative->doc().location(), filePath, userFriendlyFilePath,
-                                    outputDir() + QLatin1String("/images"));
-    qsizetype images_slash = path.lastIndexOf("images/");
-    QString relImagePath;
-    if (images_slash != -1)
-        relImagePath = path.mid(images_slash);
-    return relImagePath;
-}
-
 QString Generator::indent(int level, const QString &markedCode)
 {
     if (level == 0)
@@ -1619,7 +1612,7 @@ QString Generator::indent(int level, const QString &markedCode)
     int column = 0;
 
     int i = 0;
-    while (i < markedCode.length()) {
+    while (i < markedCode.size()) {
         if (markedCode.at(i) == QLatin1Char('\n')) {
             column = 0;
         } else {
@@ -1639,15 +1632,6 @@ void Generator::initialize()
     Config &config = Config::instance();
     s_outputFormats = config.getOutputFormats();
     s_redirectDocumentationToDevNull = config.getBool(CONFIG_REDIRECTDOCUMENTATIONTODEVNULL);
-
-    s_imageFiles = config.getCanonicalPathList(CONFIG_IMAGES);
-    s_imageDirs = config.getCanonicalPathList(CONFIG_IMAGEDIRS);
-    s_exampleDirs = config.getCanonicalPathList(CONFIG_EXAMPLEDIRS);
-    s_exampleImgExts = config.getStringList(CONFIG_EXAMPLES + Config::dot + CONFIG_IMAGEEXTENSIONS);
-
-    QString imagesDotFileExtensions = CONFIG_IMAGES + Config::dot + CONFIG_FILEEXTENSIONS;
-    for (const auto &ext : config.subVars(imagesDotFileExtensions))
-        s_imgFileExts[ext] = config.getStringList(imagesDotFileExtensions + Config::dot + ext);
 
     for (auto &g : s_generators) {
         if (s_outputFormats.contains(g->format())) {
@@ -1714,12 +1698,39 @@ void Generator::initialize()
   */
 void Generator::copyTemplateFiles(const QString &configVar, const QString &subDir)
 {
+    // TODO: [resolving-files-unlinked-to-doc]
+    // This is another case of resolving files, albeit it doesn't use Doc::resolveFile.
+    // While it may be left out of a first iteration of the file
+    // resolution logic, it should later be integrated into it.
+    // This should come naturally when the output directory logic is
+    // extracted and copying a file should require a validated
+    // intermediate format.
+    // Do note that what is done here is a bit different from the
+    // resolve file routine that is done for other user-given paths.
+    // Thas is, the paths will always be absolute and not relative as
+    // they are resolved from the configuration.
+    // Ideally, this could be solved in the configuration already,
+    // together with the other configuration resolution processes that
+    // do not abide by the same constraints that, for example, snippet
+    // resolution uses.
     Config &config = Config::instance();
     QStringList files = config.getCanonicalPathList(configVar, Config::Validate);
     if (!files.isEmpty()) {
         QDir dirInfo;
+        // TODO: [uncentralized-output-directory-structure]
+        // As with other places in the generation pass, the details of
+        // where something is saved in the output directory are spread
+        // to whichever part of the generation does the saving.
+        // It is hence complex to build a model of how an output
+        // directory looks like, as the knowledge has no specific
+        // entry point or chain-path that can be followed in full.
+        // Each of those operations should be centralized in a system
+        // that uniquely knows what the format of the output-directory
+        // is and how to perform operations on it.
+        // Later, move this operation to that centralized system.
         QString templateDir = s_outDir + QLatin1Char('/') + subDir;
         if (!dirInfo.exists(templateDir) && !dirInfo.mkdir(templateDir)) {
+            // TODO: [uncentralized-admonition]
             config.lastLocation().fatal(
                     QStringLiteral("Cannot create %1 directory '%2'").arg(subDir, templateDir));
         } else {
@@ -1786,18 +1797,6 @@ void Generator::initializeFormat()
         m_quoting = config.getBool(format() + Config::dot + CONFIG_QUOTINGINFORMATION);
     else
         m_quoting = config.getBool(CONFIG_QUOTINGINFORMATION);
-}
-
-/*!
-  Appends each directory path in \a moreImageDirs to the
-  list of image directories.
- */
-void Generator::augmentImageDirs(QSet<QString> &moreImageDirs)
-{
-    if (moreImageDirs.isEmpty())
-        return;
-    for (const auto &it : moreImageDirs)
-        s_imageDirs.append(it);
 }
 
 /*!
@@ -1873,7 +1872,7 @@ bool Generator::parseArg(const QString &src, const QString &tag, int *pos, int n
     // SKIP_CHAR('<');
     // SKIP_CHAR('@');
 
-    if (tag != QStringView(src).mid(i, tag.length())) {
+    if (tag != QStringView(src).mid(i, tag.size())) {
         return false;
     }
 
@@ -1881,7 +1880,7 @@ bool Generator::parseArg(const QString &src, const QString &tag, int *pos, int n
         qDebug() << "haystack:" << src << "needle:" << tag << "i:" << i;
 
     // skip tag
-    i += tag.length();
+    i += tag.size();
 
     // parse stuff like:  linkTag("(<@link node=\"([^\"]+)\">).*(</@link>)");
     if (par1) {
@@ -1913,7 +1912,7 @@ bool Generator::parseArg(const QString &src, const QString &tag, int *pos, int n
     // find contents up to closing "</@tag>
     j = i;
     for (; true; ++i) {
-        if (i + 4 + tag.length() > n)
+        if (i + 4 + tag.size() > n)
             return false;
         if (src[i] != '<')
             continue;
@@ -1921,16 +1920,16 @@ bool Generator::parseArg(const QString &src, const QString &tag, int *pos, int n
             continue;
         if (src[i + 2] != '@')
             continue;
-        if (tag != QStringView(src).mid(i + 3, tag.length()))
+        if (tag != QStringView(src).mid(i + 3, tag.size()))
             continue;
-        if (src[i + 3 + tag.length()] != '>')
+        if (src[i + 3 + tag.size()] != '>')
             continue;
         break;
     }
 
     *contents = QStringView(src).mid(j, i - j);
 
-    i += tag.length() + 4;
+    i += tag.size() + 4;
 
     *pos = i;
     if (debug)
@@ -1948,11 +1947,6 @@ QString Generator::plainCode(const QString &markedCode)
     t.replace(lt, QLatin1String("<"));
     t.replace(amp, QLatin1String("&"));
     return t;
-}
-
-void Generator::setImageFileExtensions(const QStringList &extensions)
-{
-    s_imgFileExts[format()] = extensions;
 }
 
 int Generator::skipAtoms(const Atom *atom, Atom::AtomType type) const
@@ -2032,16 +2026,38 @@ void Generator::supplementAlsoList(const Node *node, QList<Text> &alsoList)
 
 void Generator::terminate()
 {
-    for (const auto &generator : qAsConst(s_generators)) {
+    for (const auto &generator : std::as_const(s_generators)) {
         if (s_outputFormats.contains(generator->format()))
             generator->terminateGenerator();
     }
 
+    // REMARK: Generators currently, due to recent changes and the
+    // transitive nature of the current codebase, receive some of
+    // their dependencies in the constructor and some of them in their
+    // initialize-terminate lifetime.
+    // This means that generators need to be constructed and
+    // destructed between usages such that if multiple usages are
+    // required, the generators present in the list will have been
+    // destroyed by then such that accessing them would be an error.
+    // The current codebase calls initialize and the correspective
+    // terminate with the same scope as the lifetime of the
+    // generators.
+    // Then, clearing the list ensures that, if another generator
+    // execution is needed, the stale generators will not be removed
+    // as to be replaced by newly constructed ones.
+    // Do note that it is not clear that this will happen for any call
+    // in Qt's documentation and this should work only because of the
+    // form of the current codebase and the scoping of the
+    // initialize-terminate calls. As such, this should be considered
+    // a patchwork that may or may not be doing anything and that may
+    // break due to changes in other parts of the codebase.
+    //
+    // This is still to be considered temporary as the whole
+    // initialize-terminate idiom must be removed from the codebase.
+    s_generators.clear();
+
     s_fmtLeftMaps.clear();
     s_fmtRightMaps.clear();
-    s_imgFileExts.clear();
-    s_imageFiles.clear();
-    s_imageDirs.clear();
     s_outDir.clear();
 }
 
@@ -2055,8 +2071,8 @@ QString Generator::trimmedTrailing(const QString &string, const QString &prefix,
                                    const QString &suffix)
 {
     QString trimmed = string;
-    while (trimmed.length() > 0 && trimmed[trimmed.length() - 1].isSpace())
-        trimmed.truncate(trimmed.length() - 1);
+    while (trimmed.size() > 0 && trimmed[trimmed.size() - 1].isSpace())
+        trimmed.truncate(trimmed.size() - 1);
 
     trimmed.append(suffix);
     trimmed.prepend(prefix);
@@ -2075,7 +2091,7 @@ QString Generator::typeString(const Node *node)
     case Node::Union:
         return "union";
     case Node::QmlType:
-    case Node::QmlBasicType:
+    case Node::QmlValueType:
     case Node::JsBasicType:
         return "type";
     case Node::Page:
@@ -2097,6 +2113,9 @@ QString Generator::typeString(const Node *node)
         case FunctionNode::JsMethod:
         case FunctionNode::QmlMethod:
             return "method";
+        case FunctionNode::MacroWithParams:
+        case FunctionNode::MacroWithoutParams:
+            return "macro";
         default:
             break;
         }
