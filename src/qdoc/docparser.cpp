@@ -258,7 +258,8 @@ void DocParser::initialize(const Config &config, FileResolver& file_resolver)
 
     // If any of the formats define quotinginformation, activate quoting
     DocParser::s_quoting = config.getBool(CONFIG_QUOTINGINFORMATION);
-    for (const auto &format : config.getOutputFormats())
+    const auto &outputFormats = config.getOutputFormats();
+    for (const auto &format : outputFormats)
         DocParser::s_quoting = DocParser::s_quoting
                 || config.getBool(format + Config::dot + CONFIG_QUOTINGINFORMATION);
 
@@ -1111,8 +1112,8 @@ void DocParser::parse(const QString &source, DocPrivate *docPrivate,
                         appendWord(cmdStr);
                     } else {
                         if (!cmdStr.endsWith("propertygroup")) {
-                            // The QML and JS property group commands are no longer required
-                            // for grouping QML and JS properties. They are allowed but ignored.
+                            // The QML property group commands are no longer required
+                            // for grouping QML properties. They are allowed but ignored.
                             location().warning(QStringLiteral("Unknown command '\\%1'").arg(cmdStr),
                                                detailsUnknownCommand(metaCommandSet, cmdStr));
                         }
@@ -1330,9 +1331,11 @@ void DocParser::include(const QString &fileName, const QString &identifier, cons
                 QStringList lineBuffer = includedContent.split(QLatin1Char('\n'));
                 int i = 0;
                 int startLine = -1;
+                QStringView trimmedLine;
                 while (i < lineBuffer.size()) {
-                    if (lineBuffer[i].startsWith("//!")) {
-                        if (lineBuffer[i].contains(identifier)) {
+                    trimmedLine = QStringView{lineBuffer[i]}.trimmed();
+                    if (trimmedLine.startsWith(QLatin1String("//!"))) {
+                        if (trimmedLine.contains(identifier)) {
                             startLine = i + 1;
                             break;
                         }
@@ -1347,9 +1350,10 @@ void DocParser::include(const QString &fileName, const QString &identifier, cons
                 QString result;
                 i = startLine;
                 do {
-                    if (lineBuffer[i].startsWith("//!")) {
+                    trimmedLine = QStringView{lineBuffer[i]}.trimmed();
+                    if (trimmedLine.startsWith(QLatin1String("//!"))) {
                         if (i < lineBuffer.size()) {
-                            if (lineBuffer[i].contains(identifier)) {
+                            if (trimmedLine.contains(identifier)) {
                                 break;
                             }
                         }
@@ -1871,7 +1875,7 @@ void DocParser::quoteFromFile(const QString& filename)
             (*file_resolver).get_search_directories().cend(),
             u"Searched directories:"_qs,
             std::plus(),
-            [](const DirectoryPath& directory_path){ return " " + directory_path.value(); }
+            [](const DirectoryPath &directory_path) -> QString { return u' ' + directory_path.value(); }
         );
 
         location().warning(u"Cannot find file to quote from: %1"_qs.arg(filename), details);

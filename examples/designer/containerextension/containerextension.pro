@@ -17,9 +17,10 @@ TARGET   = $$qtLibraryTarget($$TARGET)
 
 os2:TARGET_SHORT = $$qtLibraryTarget(ctrext)
 
+#! [3]
 target.path = $$[QT_INSTALL_PLUGINS]/designer
 INSTALLS += target
-
+#! [3]
 }
 
 #! [1]

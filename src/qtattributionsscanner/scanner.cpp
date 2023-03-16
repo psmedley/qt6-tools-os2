@@ -84,7 +84,7 @@ static std::optional<QStringList> toStringList(const QJsonValue &value)
     if (!value.isArray())
         return std::nullopt;
     QStringList result;
-    for (auto iter : value.toArray()) {
+    for (const auto &iter : value.toArray()) {
         if (iter.type() != QJsonValue::String)
             return std::nullopt;
         result.push_back(iter.toString());
@@ -178,6 +178,7 @@ static std::optional<Package> readPackage(const QJsonObject &object, const QStri
         const QString key = iter.key();
 
         if (!iter.value().isString() && key != QLatin1String("QtParts")
+            && key != QLatin1String("Files")
             && key != QLatin1String("LicenseFiles")) {
             if (logLevel != SilentLog)
                 std::cerr << qPrintable(tr("File %1: Expected JSON string as value of %2.").arg(
@@ -191,7 +192,22 @@ static std::optional<Package> readPackage(const QJsonObject &object, const QStri
         } else if (key == QLatin1String("Path")) {
             p.path = QDir(directory).absoluteFilePath(value);
         } else if (key == QLatin1String("Files")) {
-            p.files = value.simplified().split(QLatin1Char(' '), Qt::SkipEmptyParts);
+            QJsonValueConstRef jsonValue = iter.value();
+            if (jsonValue.isArray()) {
+                auto maybeStringList = toStringList(jsonValue);
+                if (maybeStringList)
+                    p.files = maybeStringList.value();
+            } else if (jsonValue.isString()) {
+                // Legacy format: multiple values separated by space in one string.
+                p.files = value.simplified().split(QLatin1Char(' '), Qt::SkipEmptyParts);
+            } else {
+                if (logLevel != SilentLog) {
+                    std::cerr << qPrintable(tr("File %1: Expected JSON array of strings as value "
+                                               "of Files."));
+                    validPackage = false;
+                    continue;
+                }
+            }
         } else if (key == QLatin1String("Id")) {
             p.id = value;
         } else if (key == QLatin1String("Homepage")) {
@@ -217,7 +233,7 @@ static std::optional<Package> readPackage(const QJsonObject &object, const QStri
                 continue;
             }
             const QDir dir(directory);
-            for (auto iter : strings.value())
+            for (const auto &iter : std::as_const(strings.value()))
                 p.licenseFiles.push_back(dir.absoluteFilePath(iter));
         } else if (key == QLatin1String("Copyright")) {
             p.copyright = value;
@@ -256,8 +272,8 @@ static std::optional<Package> readPackage(const QJsonObject &object, const QStri
         QFile file(p.copyrightFile);
         if (!file.open(QIODevice::ReadOnly)) {
             std::cerr << qPrintable(tr("File %1: Cannot open 'CopyrightFile' %2.\n")
-                                            .arg(QDir::toNativeSeparators(filePath))
-                                            .arg(QDir::toNativeSeparators(p.copyrightFile)));
+                                            .arg(QDir::toNativeSeparators(filePath),
+                                                 QDir::toNativeSeparators(p.copyrightFile)));
             validPackage = false;
         }
         p.copyrightFileContents = QString::fromUtf8(file.readAll());
@@ -268,8 +284,8 @@ static std::optional<Package> readPackage(const QJsonObject &object, const QStri
         if (!file.open(QIODevice::ReadOnly)) {
             if (logLevel != SilentLog) {
                 std::cerr << qPrintable(tr("File %1: Cannot open 'LicenseFile' %2.\n")
-                                                .arg(QDir::toNativeSeparators(filePath))
-                                                .arg(QDir::toNativeSeparators(licenseFile)));
+                                                .arg(QDir::toNativeSeparators(filePath),
+                                                     QDir::toNativeSeparators(licenseFile)));
             }
             validPackage = false;
         }

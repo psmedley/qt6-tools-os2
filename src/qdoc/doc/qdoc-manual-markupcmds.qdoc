@@ -3403,13 +3403,6 @@
 
     \note Support for this argument was introduced in QDoc 5.6.
 
-    \section2 \c jstypesbymodule
-
-    Similar to \c classesbymodule argument, but used for listing the
-    JavaScript types from the module specified with the second argument.
-
-    \note Support for this argument was introduced in QDoc 5.6.
-
     \section2 \c {examplefiles [regular_expression]}
 
     The \c examplefiles argument lists the files that are part of
@@ -3697,14 +3690,11 @@
     \target meta-command
     \section1 \\meta
 
-    The \\meta command is used for adding metadata to example documentation,
-    and when generating HTML output for specifying the \e maintainer(s) of a
-    C++ class.
-
+    The \\meta command is used for adding metadata to example documentation.
     The command has two arguments: the first argument is the name of the
-    metadata attribute, and the second argument is the
-    value for the attribute. Each argument should be enclosed in curly
-    brackets, as shown in this example:
+    metadata attribute, and the second argument is the value for the attribute.
+    Each argument should be enclosed in curly brackets, as shown in this
+    example:
 
     \code
     / *!

@@ -1,29 +1,27 @@
-#! [0]
+#! [1]
 QT      += widgets designer
-#! [0]
+#! [1]
 
 QTDIR_build {
 # This is only for the Qt build. Do not use externally. We mean it.
 PLUGIN_TYPE = designer
 PLUGIN_CLASS_NAME = TicTacToePlugin
-os2:TARGET_SHORT = tskme
 load(qt_plugin)
 CONFIG += install_ok
 } else {
 # Public example:
 
-#! [1]
+#! [0]
 TEMPLATE = lib
 CONFIG  += plugin
-#! [1]
+#! [0]
 
 TARGET = $$qtLibraryTarget($$TARGET)
 
-os2:TARGET_SHORT = $$qtLibraryTarget(tskme)
-
+#! [3]
 target.path = $$[QT_INSTALL_PLUGINS]/designer
 INSTALLS += target
-
+#! [3]
 }
 
 #! [2]

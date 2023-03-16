@@ -1,35 +1,33 @@
-#! [0]
+#! [1]
 QT          += widgets uiplugin
-#! [0]
+#! [1]
 
 QTDIR_build {
 # This is only for the Qt build. Do not use externally. We mean it.
 PLUGIN_TYPE = designer
 PLUGIN_CLASS_NAME = AnalogClockPlugin
-os2:TARGET_SHORT = custwp
 load(qt_plugin)
 CONFIG += install_ok
 } else {
 # Public example:
 
-#! [2]
+#! [0]
 CONFIG      += plugin
 TEMPLATE    = lib
-#! [2]
+#! [0]
 
+#! [3]
 TARGET = $$qtLibraryTarget($$TARGET)
-
-os2:TARGET_SHORT = $$qtLibraryTarget(custwp)
 
 target.path = $$[QT_INSTALL_PLUGINS]/designer
 INSTALLS += target
-
+#! [3]
 }
 
-#! [3]
+#! [2]
 HEADERS     = analogclock.h \
               customwidgetplugin.h
 SOURCES     = analogclock.cpp \
               customwidgetplugin.cpp
 OTHER_FILES += analogclock.json
-#! [3]
+#! [2]

@@ -231,7 +231,7 @@ const Atom *DocBookGenerator::generateAtomList(const Atom *atom, const Node *rel
 
 QString removeCodeMarkers(const QString& code) {
     QString rewritten = code;
-    QRegularExpression re("(<@[^>&]*>)|(<\\/@[^&>]*>)");
+    static const QRegularExpression re("(<@[^>&]*>)|(<\\/@[^&>]*>)");
     rewritten.replace(re, "");
     return rewritten;
 }
@@ -378,7 +378,7 @@ qsizetype DocBookGenerator::generateAtom(const Atom *atom, const Node *relative)
             // For parameters, understand subscripts.
             if (atom->string() == ATOM_FORMATTING_PARAMETER) {
                 if (atom->next() != nullptr && atom->next()->type() == Atom::String) {
-                    QRegularExpression subscriptRegExp("^([a-z]+)_([0-9n])$");
+                    static const QRegularExpression subscriptRegExp("^([a-z]+)_([0-9n])$");
                     auto match = subscriptRegExp.match(atom->next()->string());
                     if (match.hasMatch()) {
                         m_writer->writeCharacters(match.captured(1));
@@ -1163,8 +1163,6 @@ void DocBookGenerator::generateList(const Node *relative, const QString &selecto
         type = Node::Module;
     else if (selector == QLatin1String("qml-modules"))
         type = Node::QmlModule;
-    else if (selector == QLatin1String("js-modules"))
-        type = Node::JsModule;
 
     if (type != Node::NoType) {
         NodeList nodeList;
@@ -1176,9 +1174,8 @@ void DocBookGenerator::generateList(const Node *relative, const QString &selecto
         generateAnnotatedList(relative, nodeList, selector);
     } else {
         /*
-          \generatelist {selector} is only allowed in a
-          comment where the topic is \group, \module,
-          \qmlmodule, or \jsmodule
+          \generatelist {selector} is only allowed in a comment where
+          the topic is \group, \module, or \qmlmodule.
         */
         Node *n = const_cast<Node *>(relative);
         auto *cn = static_cast<CollectionNode *>(n);
@@ -1388,7 +1385,7 @@ void DocBookGenerator::generateCompactList(ListType listType, const Node *relati
             }
 
             QStringList pieces;
-            if (it.value()->isQmlType() || it.value()->isJsType()) {
+            if (it.value()->isQmlType()) {
                 QString name = it.value()->name();
                 next = it;
                 ++next;
@@ -1830,7 +1827,7 @@ void DocBookGenerator::generateObsoleteQmlMembers(const Sections &sections)
 static QString nodeToSynopsisTag(const Node *node)
 {
     // Order from Node::nodeTypeString.
-    if (node->isClass() || node->isQmlType() || node->isQmlBasicType())
+    if (node->isClass() || node->isQmlType())
         return QStringLiteral("classsynopsis");
     if (node->isNamespace())
         return QStringLiteral("packagesynopsis");
@@ -1843,7 +1840,7 @@ static QString nodeToSynopsisTag(const Node *node)
     if (node->isTypedef())
         return QStringLiteral("typedefsynopsis");
     if (node->isFunction()) {
-        // Signals are also encoded as functions (including QML/JS ones).
+        // Signals are also encoded as functions (including QML ones).
         const auto fn = static_cast<const FunctionNode *>(node);
         if (fn->isCtor() || fn->isCCtor() || fn->isMCtor())
             return QStringLiteral("constructorsynopsis");
@@ -2048,16 +2045,11 @@ void DocBookGenerator::generateQmlRequisites(const QmlTypeNode *qcn)
     QString logicalModuleVersion;
     const CollectionNode *collection = qcn->logicalModule();
 
-    // skip import statement for \internal collections
-    if (!collection || !collection->isInternal() || m_showInternal) {
-        logicalModuleVersion =
-                collection ? collection->logicalModuleVersion() : qcn->logicalModuleVersion();
-
-        QStringList importText;
-        importText << "import " + qcn->logicalModuleName();
-        if (!logicalModuleVersion.isEmpty())
-            importText << logicalModuleVersion;
-        generateRequisite("Import Statement", importText.join(' '));
+    // Skip import statement for \internal collections
+    const bool generate_import_statement = !qcn->logicalModuleName().isEmpty() && (!collection || !collection->isInternal() || m_showInternal);
+    if (generate_import_statement) {
+        QStringList parts = QStringList() << "import" << qcn->logicalModuleName() << qcn->logicalModuleVersion();
+        generateRequisite("Import Statement", parts.join(' ').trimmed());
     }
 
     // Since and project.
@@ -2466,7 +2458,7 @@ void DocBookGenerator::generateFileList(const ExampleNode *en, bool images)
                 file_resolver.get_search_directories().cend(),
                 u"Searched directories:"_qs,
                 std::plus(),
-                [](const DirectoryPath& directory_path){ return " " + directory_path.value(); }
+                [](const DirectoryPath &directory_path) -> QString { return u' ' + directory_path.value(); }
             );
 
             en->location().warning(u"Cannot find file to quote from: %1"_qs.arg(path), details);
@@ -2595,37 +2587,6 @@ void DocBookGenerator::generateAlsoList(const Node *node)
 }
 
 /*!
-  Generate a list of maintainers in the output
- */
-void DocBookGenerator::generateMaintainerList(const Aggregate *node)
-{
-    // From Generator::generateMaintainerList.
-    const QStringList sl = getMetadataElements(node, "maintainer");
-
-    if (!sl.isEmpty()) {
-        m_writer->writeStartElement(dbNamespace, "para");
-        m_writer->writeStartElement(dbNamespace, "emphasis");
-        m_writer->writeCharacters("Maintained by: ");
-        m_writer->writeEndElement(); // emphasis
-        newLine();
-
-        m_writer->writeStartElement(dbNamespace, "simplelist");
-        m_writer->writeAttribute("type", "vert");
-        m_writer->writeAttribute("role", "maintainer");
-        for (const QString &maintainer : sl) {
-            m_writer->writeStartElement(dbNamespace, "member");
-            m_writer->writeCharacters(maintainer);
-            m_writer->writeEndElement(); // member
-            newLine();
-        }
-        m_writer->writeEndElement(); // simplelist
-        newLine();
-
-        m_writer->writeEndElement(); // para
-    }
-}
-
-/*!
   Open a new file to write XML contents, including the DocBook
   opening tag.
  */
@@ -2725,7 +2686,6 @@ void DocBookGenerator::generateCppReferencePage(Node *node)
 
         generateBody(aggregate);
         generateAlsoList(aggregate);
-        generateMaintainerList(aggregate);
 
         endSection();
     }
@@ -2808,8 +2768,7 @@ void DocBookGenerator::generateDocBookSynopsis(const Node *node)
 
     // Nothing to export in some cases. Note that isSharedCommentNode() returns
     // true also for QML property groups.
-    if (node->isGroup() || node->isSharedCommentNode() || node->isModule() || node->isJsModule()
-        || node->isQmlModule() || node->isPageNode())
+    if (node->isGroup() || node->isSharedCommentNode() || node->isModule() || node->isQmlModule() || node->isPageNode())
         return;
 
     // Cast the node to several subtypes (null pointer if the node is not of the required type).
@@ -3311,7 +3270,7 @@ void DocBookGenerator::typified(const QString &string, const Node *relative, boo
                     // Add the link, logic from HtmlGenerator::highlightedCode.
                     const Node *n = m_qdb->findTypeNode(pendingWord, relative, Node::DontCare);
                     QString href;
-                    if (!(n && (n->isQmlBasicType() || n->isJsBasicType()))
+                    if (!(n && n->isQmlBasicType())
                         || (relative
                             && (relative->genus() == n->genus() || Node::DontCare == n->genus()))) {
                         href = linkForNode(n, relative);
@@ -3375,7 +3334,7 @@ void DocBookGenerator::generateParameter(const Parameter &parameter, const Node 
     if (generateExtra || pname.isEmpty()) {
         // Look for the _ character in the member name followed by a number (or n):
         // this is intended to be rendered as a subscript.
-        QRegularExpression sub("([a-z]+)_([0-9]+|n)");
+        static const QRegularExpression sub("([a-z]+)_([0-9]+|n)");
 
         m_writer->writeStartElement(dbNamespace, "emphasis");
         auto match = sub.match(paramName);
@@ -3412,8 +3371,7 @@ void DocBookGenerator::generateSynopsis(const Node *node, const Node *relative,
     // Then generate the synopsis.
     if (style == Section::Details) {
         if (!node->isRelatedNonmember() && !node->isProxyNode() && !node->parent()->name().isEmpty()
-            && !node->parent()->isHeader() && !node->isProperty() && !node->isQmlNode()
-            && !node->isJsNode()) {
+            && !node->parent()->isHeader() && !node->isProperty() && !node->isQmlNode()) {
             m_writer->writeCharacters(taggedNode(node->parent()) + "::");
         }
     }
@@ -3921,7 +3879,7 @@ void DocBookGenerator::generateSectionInheritedList(const Section &section, cons
 
 /*!
   Generate the DocBook page for an entity that doesn't map
-  to any underlying parsable C++, QML, or Javascript element.
+  to any underlying parsable C++ or QML element.
  */
 void DocBookGenerator::generatePageNode(PageNode *pn)
 {
@@ -3977,10 +3935,10 @@ void DocBookGenerator::generateQmlTypePage(QmlTypeNode *qcn)
 
     Generator::setQmlTypeContext(qcn);
     QString title = qcn->fullTitle();
-    if (qcn->isJsType())
-        title += " JavaScript Type";
+    if (qcn->isQmlBasicType())
+        title.append(" QML Value Type");
     else
-        title += " QML Type";
+        title.append(" QML Type");
 
     generateHeader(title, qcn->subtitle(), qcn);
     generateQmlRequisites(qcn);
@@ -4011,53 +3969,6 @@ void DocBookGenerator::generateQmlTypePage(QmlTypeNode *qcn)
 
     generateFooter();
     Generator::setQmlTypeContext(nullptr);
-
-    endDocument();
-}
-
-/*!
-  Generate the DocBook page for the QML basic type represented
-  by the QML basic type node \a qbtn.
- */
-void DocBookGenerator::generateQmlBasicTypePage(QmlValueTypeNode *qbtn)
-{
-    // From HtmlGenerator::generateQmlBasicTypePage.
-    // Start producing the DocBook file.
-    Q_ASSERT(m_writer == nullptr);
-    m_writer = startDocument(qbtn);
-
-    QString htmlTitle = qbtn->fullTitle();
-    if (qbtn->isJsType())
-        htmlTitle += " JavaScript Basic Type";
-    else
-        htmlTitle += " QML Basic Type";
-
-    Sections sections(qbtn);
-    generateHeader(htmlTitle, qbtn->subtitle(), qbtn);
-
-    startSection("details", "Detailed Description");
-
-    generateBody(qbtn);
-    generateAlsoList(qbtn);
-
-    endSection();
-
-    SectionVector::ConstIterator s = sections.stdQmlTypeDetailsSections().constBegin();
-    while (s != sections.stdQmlTypeDetailsSections().constEnd()) {
-        if (!s->isEmpty()) {
-            startSection(s->title().toLower(), s->title());
-
-            NodeVector::ConstIterator m = s->members().constBegin();
-            while (m != s->members().constEnd()) {
-                generateDetailedQmlMember(*m, qbtn);
-                ++m;
-            }
-
-            endSection();
-        }
-        ++s;
-    }
-    generateFooter();
 
     endDocument();
 }
@@ -4121,7 +4032,7 @@ void DocBookGenerator::generateDetailedQmlMember(Node *node, const Aggregate *re
 
         const QList<Node *> sharedNodes = scn->collective();
         for (const auto &node : sharedNodes) {
-            if (node->isQmlProperty() || node->isJsProperty()) {
+            if (node->isQmlProperty()) {
                 auto *qpn = static_cast<QmlPropertyNode *>(node);
 
                 m_writer->writeStartElement(dbNamespace, "bridgehead");
@@ -4134,7 +4045,7 @@ void DocBookGenerator::generateDetailedQmlMember(Node *node, const Aggregate *re
                 generateDocBookSynopsis(qpn);
             }
         }
-    } else if (node->isQmlProperty() || node->isJsProperty()) {
+    } else if (node->isQmlProperty()) {
         auto qpn = static_cast<QmlPropertyNode *>(node);
         startSection(qpn, getQmlPropertyTitle(qpn));
         generateDocBookSynopsis(qpn);
@@ -4147,8 +4058,7 @@ void DocBookGenerator::generateDetailedQmlMember(Node *node, const Aggregate *re
         int i = 0;
         for (const auto m : sharedNodes) {
             // Ignore this element if there is nothing to generate.
-            if (!node->isFunction(Node::QML) && !node->isFunction(Node::JS)
-                && !node->isQmlProperty() && !node->isJsProperty()) {
+            if (!node->isFunction(Node::QML) && !node->isQmlProperty()) {
                 continue;
             }
 
@@ -4161,9 +4071,9 @@ void DocBookGenerator::generateDetailedQmlMember(Node *node, const Aggregate *re
             }
 
             // Write the title.
-            if (node->isFunction(Node::QML) || node->isFunction(Node::JS))
+            if (node->isFunction(Node::QML))
                 generateQmlMethodTitle(node);
-            else if (node->isQmlProperty() || node->isJsProperty())
+            else if (node->isQmlProperty())
                 m_writer->writeCharacters(
                         getQmlPropertyTitle(static_cast<QmlPropertyNode *>(node)));
 
@@ -4213,26 +4123,23 @@ void DocBookGenerator::generateDocumentation(Node *node)
     if (node->parent()) {
         if (node->isCollectionNode()) {
             /*
-              A collection node collects: groups, C++ modules,
-              QML modules or JavaScript modules. Testing for a
-              CollectionNode must be done before testing for a
-              TextPageNode because a CollectionNode is a PageNode
-              at this point.
+              A collection node collects: groups, C++ modules, or QML
+              modules. Testing for a CollectionNode must be done
+              before testing for a TextPageNode because a
+              CollectionNode is a PageNode at this point.
 
-              Don't output an HTML page for the collection
-              node unless the \group, \module, \qmlmodule or
-              \jsmodule command was actually seen by qdoc in
-              the qdoc comment for the node.
+              Don't output an HTML page for the collection node unless
+              the \group, \module, or \qmlmodule command was actually
+              seen by qdoc in the qdoc comment for the node.
 
               A key prerequisite in this case is the call to
-              mergeCollections(cn). We must determine whether
-              this group, module, QML module, or JavaScript
-              module has members in other modules. We know at
-              this point that cn's members list contains only
-              members in the current module. Therefore, before
-              outputting the page for cn, we must search for
-              members of cn in the other modules and add them
-              to the members list.
+              mergeCollections(cn). We must determine whether this
+              group, module, or QML module has members in other
+              modules. We know at this point that cn's members list
+              contains only members in the current module. Therefore,
+              before outputting the page for cn, we must search for
+              members of cn in the other modules and add them to the
+              members list.
             */
             auto cn = static_cast<CollectionNode *>(node);
             if (cn->wasSeen()) {
@@ -4250,10 +4157,8 @@ void DocBookGenerator::generateDocumentation(Node *node)
             if ((node->isClassNode() || node->isHeader() || node->isNamespace())
                 && node->docMustBeGenerated()) {
                 generateCppReferencePage(static_cast<Aggregate *>(node));
-            } else if (node->isQmlType() || node->isJsType()) {
+            } else if (node->isQmlType()) { // Includes QML value types
                 generateQmlTypePage(static_cast<QmlTypeNode *>(node));
-            } else if (node->isQmlBasicType() || node->isJsBasicType()) {
-                generateQmlBasicTypePage(static_cast<QmlValueTypeNode *>(node));
             } else if (node->isProxyNode()) {
                 generateProxyPage(static_cast<Aggregate *>(node));
             }
@@ -4289,7 +4194,6 @@ void DocBookGenerator::generateProxyPage(Aggregate *aggregate)
 
         generateBody(aggregate);
         generateAlsoList(aggregate);
-        generateMaintainerList(aggregate);
 
         endSection();
     }
@@ -4383,14 +4287,14 @@ void DocBookGenerator::generateCollectionNode(CollectionNode *cn)
             // generateAlsoList generates something.
             !cn->doc().alsoList().empty() ||
             // generateAnnotatedList generates something.
-            (!cn->noAutoList() && (cn->isGroup() || cn->isQmlModule() || cn->isJsModule()))) {
+            (!cn->noAutoList() && (cn->isGroup() || cn->isQmlModule()))) {
         writeAnchor("details");
     }
 
     generateBody(cn);
     generateAlsoList(cn);
 
-    if (!cn->noAutoList() && (cn->isGroup() || cn->isQmlModule() || cn->isJsModule()))
+    if (!cn->noAutoList() && (cn->isGroup() || cn->isQmlModule()))
         generateAnnotatedList(cn, cn->members(), "members");
 
     if (generatedTitle)

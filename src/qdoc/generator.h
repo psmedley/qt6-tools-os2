@@ -25,7 +25,6 @@ class FunctionNode;
 class Location;
 class Node;
 class QDocDatabase;
-class QmlValueTypeNode;
 
 class Generator
 {
@@ -91,16 +90,10 @@ protected:
     virtual void generateCppReferencePage(Aggregate *, CodeMarker *) {}
     virtual void generateProxyPage(Aggregate *, CodeMarker *) {}
     virtual void generateQmlTypePage(QmlTypeNode *, CodeMarker *) {}
-    virtual void generateQmlBasicTypePage(QmlValueTypeNode *, CodeMarker *) {}
     virtual void generatePageNode(PageNode *, CodeMarker *) {}
     virtual void generateCollectionNode(CollectionNode *, CodeMarker *) {}
     virtual void generateGenericCollectionPage(CollectionNode *, CodeMarker *) {}
     virtual void generateDocumentation(Node *node);
-    virtual void generateMaintainerList(const Aggregate *node, CodeMarker *marker);
-    virtual void generateMaintainerList(const Aggregate *node)
-    {
-        generateMaintainerList(node, nullptr);
-    };
     virtual bool generateQmlText(const Text &text, const Node *relative, CodeMarker *marker,
                                  const QString &qmlName);
     virtual bool generateQmlText(const Text &text, const Node *relative)

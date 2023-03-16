@@ -3,6 +3,7 @@
 
 #include "paletteeditor.h"
 
+#include <qdesigner_utils_p.h>
 #include <iconloader_p.h>
 #include <qtcolorbutton.h>
 
@@ -85,18 +86,15 @@ QPalette PaletteEditor::palette() const
 void PaletteEditor::setPalette(const QPalette &palette)
 {
     m_editPalette = palette;
-    const uint mask = palette.resolveMask();
-    for (int i = 0; i < static_cast<int>(QPalette::NColorRoles); ++i) {
-        if (!(mask & (1 << i))) {
-            m_editPalette.setBrush(QPalette::Active, static_cast<QPalette::ColorRole>(i),
-                        m_parentPalette.brush(QPalette::Active, static_cast<QPalette::ColorRole>(i)));
-            m_editPalette.setBrush(QPalette::Inactive, static_cast<QPalette::ColorRole>(i),
-                        m_parentPalette.brush(QPalette::Inactive, static_cast<QPalette::ColorRole>(i)));
-            m_editPalette.setBrush(QPalette::Disabled, static_cast<QPalette::ColorRole>(i),
-                        m_parentPalette.brush(QPalette::Disabled, static_cast<QPalette::ColorRole>(i)));
+    for (int r = 0; r < static_cast<int>(QPalette::NColorRoles); ++r) {
+        for (int g = 0; g < static_cast<int>(QPalette::NColorGroups); ++g) {
+            const auto role = static_cast<QPalette::ColorRole>(r);
+            const auto group = static_cast<QPalette::ColorGroup>(g);
+            if (!palette.isBrushSet(group, role))
+                m_editPalette.setBrush(group, role, m_parentPalette.brush(group, role));
         }
     }
-    m_editPalette.setResolveMask(mask);
+    m_editPalette.setResolveMask(palette.resolveMask());
     updatePreviewPalette();
     updateStyledButton();
     m_paletteUpdated = true;
@@ -204,15 +202,12 @@ QPalette PaletteEditor::getPalette(QDesignerFormEditorInterface *core, QWidget* 
 {
     PaletteEditor dlg(core, parent);
     QPalette parentPalette(parentPal);
-    uint mask = init.resolveMask();
-    for (int i = 0; i < static_cast<int>(QPalette::NColorRoles); ++i) {
-        if (!(mask & (1 << i))) {
-            parentPalette.setBrush(QPalette::Active, static_cast<QPalette::ColorRole>(i),
-                        init.brush(QPalette::Active, static_cast<QPalette::ColorRole>(i)));
-            parentPalette.setBrush(QPalette::Inactive, static_cast<QPalette::ColorRole>(i),
-                        init.brush(QPalette::Inactive, static_cast<QPalette::ColorRole>(i)));
-            parentPalette.setBrush(QPalette::Disabled, static_cast<QPalette::ColorRole>(i),
-                        init.brush(QPalette::Disabled, static_cast<QPalette::ColorRole>(i)));
+    for (int r = 0; r < static_cast<int>(QPalette::NColorRoles); ++r) {
+        for (int g = 0; g < static_cast<int>(QPalette::NColorGroups); ++g) {
+            const auto role = static_cast<QPalette::ColorRole>(r);
+            const auto group = static_cast<QPalette::ColorGroup>(g);
+            if (!init.isBrushSet(group, role))
+                parentPalette.setBrush(group, role, init.brush(group, role));
         }
     }
     dlg.setPalette(init, parentPalette);
@@ -363,6 +358,11 @@ void PaletteEditor::load()
 }
 
 //////////////////////
+// Column 0: Role name and reset button. Uses a boolean value indicating
+//           whether the role is modified for the edit role.
+// Column 1: Color group Active
+// Column 2: Color group Inactive (visibility depending on m_compute/detail radio group)
+// Column 3: Color group Disabled
 
 PaletteModel::PaletteModel(QObject *parent)  :
     QAbstractTableModel(parent)
@@ -394,6 +394,12 @@ QBrush PaletteModel::brushAt(const QModelIndex &index) const
     return m_palette.brush(columnToGroup(index.column()), roleAt(index.row()));
 }
 
+// Palette resolve mask with all group bits for a row/role
+quint64 PaletteModel::rowMask(const QModelIndex &index) const
+{
+    return paletteResolveMask(roleAt(index.row()));
+}
+
 QVariant PaletteModel::data(const QModelIndex &index, int role) const
 {
     if (!index.isValid())
@@ -403,15 +409,11 @@ QVariant PaletteModel::data(const QModelIndex &index, int role) const
     if (index.column() < 0 || index.column() >= 4)
         return QVariant();
 
-    if (index.column() == 0) {
+    if (index.column() == 0) { // Role name/bold print if changed
         if (role == Qt::DisplayRole)
             return m_roleEntries.at(index.row()).name;
-        if (role == Qt::EditRole) {
-            const uint mask = m_palette.resolveMask();
-            if (mask & (1 << int(roleAt(index.row()))))
-                return true;
-            return false;
-        }
+        if (role == Qt::EditRole)
+            return (rowMask(index) & m_palette.resolveMask()) != 0;
         return QVariant();
     }
     if (role == Qt::ToolTipRole)
@@ -470,11 +472,12 @@ bool PaletteModel::setData(const QModelIndex &index, const QVariant &value, int 
         return true;
     }
     if (index.column() == 0 && role == Qt::EditRole) {
-        uint mask = m_palette.resolveMask();
+        auto mask = m_palette.resolveMask();
         const bool isMask = qvariant_cast<bool>(value);
-        if (isMask)
-            mask |= (1 << int(colorRole));
-        else {
+        const auto bitMask = rowMask(index);
+        if (isMask) {
+            mask |= bitMask;
+        } else {
             m_palette.setBrush(QPalette::Active, colorRole,
                                m_parentPalette.brush(QPalette::Active, colorRole));
             m_palette.setBrush(QPalette::Inactive, colorRole,
@@ -482,7 +485,7 @@ bool PaletteModel::setData(const QModelIndex &index, const QVariant &value, int 
             m_palette.setBrush(QPalette::Disabled, colorRole,
                                m_parentPalette.brush(QPalette::Disabled, colorRole));
 
-            mask &= ~(1 << int(colorRole));
+            mask &= ~bitMask;
         }
         m_palette.setResolveMask(mask);
         emit paletteChanged(m_palette);
