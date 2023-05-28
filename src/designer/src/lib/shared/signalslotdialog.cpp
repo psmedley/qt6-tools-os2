@@ -28,6 +28,8 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 // Regexp to match a function signature, arguments potentially
 // with namespace colons.
 static const char *signatureRegExp = "^[\\w+_]+\\(([\\w+:]\\*?,?)*\\)$";
@@ -88,7 +90,7 @@ namespace {
         QString signature = le->text();
         if (!m_signatureRegexp.match(signature).hasMatch()) {
             if (m_methodNameRegexp.match(signature).hasMatch()) {
-                signature += QStringLiteral("()");
+                signature += "()"_L1;
                 le->setText(signature);
             } else {
                 return;
@@ -205,12 +207,11 @@ void SignaturePanel::slotAdd()
     m_listView->selectionModel()->clearSelection();
     // find unique name
     for (int i = 1; ; i++) {
-        QString newSlot = m_newPrefix;
-        newSlot += QString::number(i); // Always add number, Avoid setting 'slot' for first entry
-        newSlot += QLatin1Char('(');
+        // Always add number, Avoid setting 'slot' for first entry
+        QString newSlot = m_newPrefix + QString::number(i) + u'(';
         // check for function name independent of parameters
         if (m_model->findItems(newSlot, Qt::MatchStartsWith, 0).isEmpty()) {
-            newSlot += QLatin1Char(')');
+            newSlot += u')';
             QStandardItem * item = createEditableItem(newSlot);
             m_model->appendRow(item);
             const  QModelIndex index = m_model->indexFromItem (item);
@@ -291,15 +292,17 @@ SignalSlotDialog::SignalSlotDialog(QDesignerDialogGuiInterface *dialogGui, QWidg
     setModal(true);
     m_ui->setupUi(this);
 
-    const QIcon plusIcon = qdesigner_internal::createIconSet(QString::fromUtf8("plus.png"));
-    const QIcon minusIcon = qdesigner_internal::createIconSet(QString::fromUtf8("minus.png"));
+    const QIcon plusIcon = qdesigner_internal::createIconSet(u"plus.png"_s);
+    const QIcon minusIcon = qdesigner_internal::createIconSet(u"minus.png"_s);
     m_ui->addSlotButton->setIcon(plusIcon);
     m_ui->removeSlotButton->setIcon(minusIcon);
     m_ui->addSignalButton->setIcon(plusIcon);
     m_ui->removeSignalButton->setIcon(minusIcon);
 
-    m_slotPanel = new SignaturePanel(this, m_ui->slotListView, m_ui->addSlotButton, m_ui->removeSlotButton, QStringLiteral("slot"));
-    m_signalPanel = new SignaturePanel(this, m_ui->signalListView, m_ui->addSignalButton, m_ui->removeSignalButton, QStringLiteral("signal"));
+    m_slotPanel = new SignaturePanel(this, m_ui->slotListView, m_ui->addSlotButton,
+                                     m_ui->removeSlotButton, u"slot"_s);
+    m_signalPanel = new SignaturePanel(this, m_ui->signalListView, m_ui->addSignalButton,
+                                       m_ui->removeSignalButton, u"signal"_s);
     connect(m_slotPanel, &SignaturePanel::checkSignature,
             this, &SignalSlotDialog::slotCheckSignature);
     connect(m_signalPanel, &SignaturePanel::checkSignature,

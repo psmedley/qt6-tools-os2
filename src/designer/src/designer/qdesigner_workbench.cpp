@@ -47,6 +47,8 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 static const char *appFontPrefixC = "AppFonts";
 
 using ActionList = QList<QAction *>;
@@ -793,7 +795,7 @@ bool QDesignerWorkbench::readInBackup()
     if (answer == QMessageBox::No)
         return false;
 
-    const QString modifiedPlaceHolder = QStringLiteral("[*]");
+    const auto modifiedPlaceHolder = "[*]"_L1;
     for (auto it = backupFileMap.cbegin(), end = backupFileMap.cend(); it != end; ++it) {
         QString fileName = it.key();
         fileName.remove(modifiedPlaceHolder);
@@ -883,8 +885,8 @@ QDesignerFormWindow * QDesignerWorkbench::loadForm(const QString &fileName,
             const QString text = QString::fromUtf8(file.readLine());
             file.close();
 
-            const int lf = text.indexOf(QLatin1Char('\n'));
-            if (lf > 0 && text.at(lf-1) == QLatin1Char('\r')) {
+            const auto lf = text.indexOf(u'\n');
+            if (lf > 0 && text.at(lf - 1) == u'\r') {
                 mode = qdesigner_internal::FormWindowBase::CRLFLineTerminator;
             } else if (lf >= 0) {
                 mode = qdesigner_internal::FormWindowBase::LFLineTerminator;

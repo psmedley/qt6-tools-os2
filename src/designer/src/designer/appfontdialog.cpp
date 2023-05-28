@@ -30,6 +30,8 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 enum {FileNameRole = Qt::UserRole + 1, IdRole =  Qt::UserRole + 2 };
 enum { debugAppFontWidget = 0 };
 
@@ -90,9 +92,7 @@ void AppFontManager::save(QDesignerSettingsInterface *s, const QString &prefix) 
 
 void AppFontManager::restore(const QDesignerSettingsInterface *s, const QString &prefix)
 {
-    QString key = prefix;
-    key += QLatin1Char('/');
-    key += QLatin1String(fontFileKeyC);
+    const QString key = prefix + u'/' + QLatin1StringView(fontFileKeyC);
     const QStringList fontFiles = s->value(key, QStringList()).toStringList();
 
     if (debugAppFontWidget)
@@ -252,16 +252,16 @@ AppFontWidget::AppFontWidget(QWidget *parent) :
     connect(m_view->selectionModel(), &QItemSelectionModel::selectionChanged, this, &AppFontWidget::selectionChanged);
 
     m_addButton->setToolTip(tr("Add font files"));
-    m_addButton->setIcon(qdesigner_internal::createIconSet(QString::fromUtf8("plus.png")));
+    m_addButton->setIcon(qdesigner_internal::createIconSet(u"plus.png"_s));
     connect(m_addButton, &QAbstractButton::clicked, this, &AppFontWidget::addFiles);
 
     m_removeButton->setEnabled(false);
     m_removeButton->setToolTip(tr("Remove current font file"));
-    m_removeButton->setIcon(qdesigner_internal::createIconSet(QString::fromUtf8("minus.png")));
+    m_removeButton->setIcon(qdesigner_internal::createIconSet(u"minus.png"_s));
     connect(m_removeButton, &QAbstractButton::clicked, this, &AppFontWidget::slotRemoveFiles);
 
     m_removeAllButton->setToolTip(tr("Remove all font files"));
-    m_removeAllButton->setIcon(qdesigner_internal::createIconSet(QString::fromUtf8("editdelete.png")));
+    m_removeAllButton->setIcon(qdesigner_internal::createIconSet(u"editdelete.png"_s));
     connect(m_removeAllButton, &QAbstractButton::clicked, this, &AppFontWidget::slotRemoveAll);
 
     QHBoxLayout *hLayout = new QHBoxLayout;
@@ -369,7 +369,6 @@ AppFontDialog::AppFontDialog(QWidget *parent) :
     m_appFontWidget(new AppFontWidget)
 {
     setAttribute(Qt::WA_DeleteOnClose, true);
-    setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
     setWindowTitle(tr("Additional Fonts"));
     setModal(false);
     QVBoxLayout *vl = new  QVBoxLayout;

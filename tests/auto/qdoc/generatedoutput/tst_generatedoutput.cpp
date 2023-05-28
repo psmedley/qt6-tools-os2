@@ -27,6 +27,7 @@ private slots:
     void webXmlFromCpp();
     void webXmlFromQml();
     void webXmlFromCppBug80259();
+    void illformated_documentation_caused_qtbug112641();
 
     // DocBook generator
     void docBookFromQDocFile();
@@ -291,6 +292,14 @@ void tst_generatedOutput::webXmlFromCppBug80259()
                    "html/index.webxml");
 }
 
+void tst_generatedOutput::illformated_documentation_caused_qtbug112641()
+{
+    testAndCompare("testdata/illformatted_documentation/illformatted_documentation.qdocconf",
+                   "html/illformatted-examples.webxml "
+                   "html/illformatteddocumentation-someexample-example.webxml "
+                   "html/illformatteddocumentation.index");
+}
+
 void tst_generatedOutput::docBookFromQDocFile()
 {
     testAndCompare("testdata/configs/docbook_test.qdocconf",
@@ -352,6 +361,7 @@ void tst_generatedOutput::examplesManifestXmlAndQhp()
 {
     testAndCompare("testdata/configs/examples-qhp.qdocconf",
                    "examples-manifest.xml "
+                   "test-demos-demo-example.html "
                    "test.qhp");
 }
 

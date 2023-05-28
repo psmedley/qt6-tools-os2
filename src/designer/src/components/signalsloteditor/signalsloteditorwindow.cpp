@@ -42,6 +42,8 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 // Add suitable form widgets to a list of objects for the  signal slot
 // editor. Prevent special widgets from showing up there.
 static void addWidgetToObjectList(const QWidget *w, QStringList &r)
@@ -402,7 +404,7 @@ void InlineEditorModel::addTitle(const QString &title)
     const int cnt = rowCount();
     insertRows(cnt, 1);
     QModelIndex cat_idx = index(cnt, 0);
-    setData(cat_idx, QString(title + QLatin1Char(':')), Qt::DisplayRole);
+    setData(cat_idx, QString(title + u':'), Qt::DisplayRole);
     setData(cat_idx, TitleItem, Qt::UserRole);
     QFont font = QApplication::font();
     font.setBold(true);
@@ -682,11 +684,11 @@ SignalSlotEditorWindow::SignalSlotEditorWindow(QDesignerFormEditorInterface *cor
 
     QToolBar *toolBar = new QToolBar;
     toolBar->setIconSize(QSize(22, 22));
-    m_add_button->setIcon(createIconSet(QStringLiteral("plus.png")));
+    m_add_button->setIcon(createIconSet(u"plus.png"_s));
     connect(m_add_button, &QAbstractButton::clicked, this, &SignalSlotEditorWindow::addConnection);
     toolBar->addWidget(m_add_button);
 
-    m_remove_button->setIcon(createIconSet(QStringLiteral("minus.png")));
+    m_remove_button->setIcon(createIconSet(u"minus.png"_s));
     connect(m_remove_button, &QAbstractButton::clicked, this, &SignalSlotEditorWindow::removeConnection);
     toolBar->addWidget(m_remove_button);
 

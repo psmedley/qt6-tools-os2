@@ -32,6 +32,8 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 enum { profileComboIndexOffset = 1 };
 enum { debugNewFormWidget = 0 };
 
@@ -48,7 +50,7 @@ static const char *newFormObjectNameC = "Form";
 //  else return "Form".
 static QString formName(const QString &className)
 {
-    if (!className.startsWith(QLatin1Char('Q')))
+    if (!className.startsWith(u'Q'))
         return QLatin1String(newFormObjectNameC);
     QString rc = className;
     rc.remove(0, 1);
@@ -116,12 +118,12 @@ NewFormWidget::NewFormWidget(QDesignerFormEditorInterface *core, QWidget *parent
     m_ui->lblPreview->setBackgroundRole(QPalette::Base);
     QDesignerSharedSettings settings(m_core);
 
-    QString uiExtension = QStringLiteral("ui");
-    QString templatePath = QStringLiteral(":/qt-project.org/designer/templates/forms");
+    QString uiExtension = u"ui"_s;
+    QString templatePath = u":/qt-project.org/designer/templates/forms"_s;
 
     QDesignerLanguageExtension *lang = qt_extension<QDesignerLanguageExtension *>(core->extensionManager(), core);
     if (lang) {
-        templatePath = QStringLiteral(":/templates/forms");
+        templatePath = u":/templates/forms"_s;
         uiExtension = lang->uiExtension();
     }
 
@@ -378,13 +380,13 @@ void NewFormWidget::loadFrom(const QString &path, bool resourceFile, const QStri
         return;
 
     // Iterate through the directory and add the templates
-    const QFileInfoList list = dir.entryInfoList(QStringList(QStringLiteral("*.") + uiExtension),
+    const QFileInfoList list = dir.entryInfoList(QStringList{"*."_L1 + uiExtension},
                                                  QDir::Files);
 
     if (list.isEmpty())
         return;
 
-    const QChar separator = resourceFile ? QChar(QLatin1Char('/'))
+    const QChar separator = resourceFile ? QChar(u'/')
                                          : QDir::separator();
     QTreeWidgetItem *root = new QTreeWidgetItem(m_ui->treeWidget);
     root->setFlags(root->flags() & ~Qt::ItemIsSelectable);
@@ -400,9 +402,7 @@ void NewFormWidget::loadFrom(const QString &path, bool resourceFile, const QStri
         visiblePath = QDir::toNativeSeparators(visiblePath);
     }
 
-    const QChar underscore = QLatin1Char('_');
-    const QChar blank = QLatin1Char(' ');
-    root->setText(0, visiblePath.replace(underscore, blank));
+    root->setText(0, visiblePath.replace(u'_', u' '));
     root->setToolTip(0, path);
 
     for (const auto &fi : list) {
@@ -410,7 +410,7 @@ void NewFormWidget::loadFrom(const QString &path, bool resourceFile, const QStri
             continue;
 
         QTreeWidgetItem *item = new QTreeWidgetItem(root);
-        const QString text = fi.baseName().replace(underscore, blank);
+        const QString text = fi.baseName().replace(u'_', u' ');
         if (selectedItemFound == nullptr && text == selectedItem)
             selectedItemFound = item;
         item->setText(0, text);
@@ -477,7 +477,7 @@ QString NewFormWidget::itemToTemplate(const QTreeWidgetItem *item, QString *erro
         const QFileInfo fiBase(fileName);
         QString sizeFileName;
         QTextStream(&sizeFileName) << fiBase.path() << QDir::separator()
-                                   << size.width() << QLatin1Char('x') << size.height() << QDir::separator()
+                                   << size.width() << 'x' << size.height() << QDir::separator()
                                    << fiBase.fileName();
         if (QFileInfo(sizeFileName).isFile())
             return readAll(sizeFileName, errorMessage);

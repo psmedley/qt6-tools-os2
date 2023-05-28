@@ -24,6 +24,8 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 static const char *rccRootTag = "RCC";
 static const char *rccTag = "qresource";
 static const char *rccFileTag = "file";
@@ -1300,8 +1302,6 @@ void QtResourceEditorDialogPrivate::slotTreeViewItemChanged(QStandardItem *item)
 QString QtResourceEditorDialogPrivate::getSaveFileNameWithExtension(QWidget *parent,
             const QString &title, QString dir, const QString &filter, const QString &extension) const
 {
-    const QChar dot = QLatin1Char('.');
-
     QString saveFile;
     while (true) {
         saveFile = m_dlgGui->getSaveFileName(parent, title, dir, filter, nullptr, QFileDialog::DontConfirmOverwrite);
@@ -1309,10 +1309,8 @@ QString QtResourceEditorDialogPrivate::getSaveFileNameWithExtension(QWidget *par
             return saveFile;
 
         const QFileInfo fInfo(saveFile);
-        if (fInfo.suffix().isEmpty() && !fInfo.fileName().endsWith(dot)) {
-            saveFile += dot;
-            saveFile += extension;
-        }
+        if (fInfo.suffix().isEmpty() && !fInfo.fileName().endsWith(u'.'))
+            saveFile += u'.' + extension;
 
         const QFileInfo fi(saveFile);
         if (!fi.exists())
@@ -1340,7 +1338,7 @@ void QtResourceEditorDialogPrivate::slotNewQrcFile()
                 QCoreApplication::translate("QtResourceEditorDialog", "New Resource File"),
                 m_firstQrcFileDialog ? qrcStartDirectory() : QString(),
                 QCoreApplication::translate("QtResourceEditorDialog", "Resource files (*.qrc)"),
-                QStringLiteral("qrc"));
+                u"qrc"_s);
     if (qrcPath.isEmpty())
         return;
 
@@ -1540,7 +1538,7 @@ void QtResourceEditorDialogPrivate::slotAddFiles()
     const QDir dir(fi.absolutePath());
     for (QString resourcePath : resourcePaths) {
         QString relativePath = dir.relativeFilePath(resourcePath);
-        if (relativePath.startsWith(QStringLiteral(".."))) {
+        if (relativePath.startsWith(".."_L1)) {
             QMessageBox msgBox(QMessageBox::Warning,
                     QCoreApplication::translate("QtResourceEditorDialog", "Incorrect Path"),
                     outOfPathWarning(relativePath), QMessageBox::Cancel);
@@ -1655,7 +1653,7 @@ void QtResourceEditorDialogPrivate::slotClonePrefix()
             QDir dir(fi.dir());
             QString oldSuffix = fi.completeSuffix();
             if (!oldSuffix.isEmpty())
-                oldSuffix = QLatin1Char('.') + oldSuffix;
+                oldSuffix = u'.' + oldSuffix;
             const QString newBaseName = fi.baseName() + suffix + oldSuffix;
             const QString newPath = QDir::cleanPath(dir.filePath(newBaseName));
             m_qrcManager->insertResourceFile(newResourcePrefix, newPath,
@@ -1753,7 +1751,7 @@ QString QtResourceEditorDialogPrivate::browseForNewLocation(const QString &resou
                     QCoreApplication::translate("QtResourceEditorDialog", "Copy As"),
                     initialPath);
         QString relativePath = rootDir.relativeFilePath(newPath);
-        if (relativePath.startsWith(QStringLiteral(".."))) {
+        if (relativePath.startsWith(".."_L1)) {
             if (warning(QCoreApplication::translate("QtResourceEditorDialog", "Copy As"),
                         QCoreApplication::translate("QtResourceEditorDialog", "<p>The selected file:</p>"
                                         "<p>%1</p><p>is outside of the current resource file's directory:</p><p>%2</p>"
@@ -1868,7 +1866,6 @@ QtResourceEditorDialog::QtResourceEditorDialog(QDesignerFormEditorInterface *cor
     d_ptr->m_dlgGui = dlgGui;
     d_ptr->m_core = core;
 
-    setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
     setWindowTitle(tr("Edit Resources"));
 
     connect(d_ptr->m_qrcManager, &QtQrcManager::qrcFileInserted,
@@ -1898,13 +1895,13 @@ QtResourceEditorDialog::QtResourceEditorDialog(QDesignerFormEditorInterface *cor
     connect(d_ptr->m_qrcManager, &QtQrcManager::resourceFileRemoved,
             this, [this](QtResourceFile *file) { d_ptr->slotResourceFileRemoved(file); });
 
-    QIcon upIcon = qdesigner_internal::createIconSet(QString::fromUtf8("up.png"));
-    QIcon downIcon = qdesigner_internal::createIconSet(QString::fromUtf8("down.png"));
-    QIcon minusIcon = qdesigner_internal::createIconSet(QString::fromUtf8("minus-16.png"));
-    QIcon newIcon = qdesigner_internal::createIconSet(QString::fromUtf8("filenew-16.png"));
-    QIcon openIcon = qdesigner_internal::createIconSet(QString::fromUtf8("fileopen-16.png"));
-    QIcon removeIcon = qdesigner_internal::createIconSet(QString::fromUtf8("editdelete-16.png"));
-    QIcon addPrefixIcon = qdesigner_internal::createIconSet(QString::fromUtf8("prefix-add.png"));
+    QIcon upIcon = qdesigner_internal::createIconSet(u"up.png"_s);
+    QIcon downIcon = qdesigner_internal::createIconSet(u"down.png"_s);
+    QIcon minusIcon = qdesigner_internal::createIconSet(u"minus-16.png"_s);
+    QIcon newIcon = qdesigner_internal::createIconSet(u"filenew-16.png"_s);
+    QIcon openIcon = qdesigner_internal::createIconSet(u"fileopen-16.png"_s);
+    QIcon removeIcon = qdesigner_internal::createIconSet(u"editdelete-16.png"_s);
+    QIcon addPrefixIcon = qdesigner_internal::createIconSet(u"prefix-add.png"_s);
 
     d_ptr->m_newQrcFileAction = new QAction(newIcon, tr("New..."), this);
     d_ptr->m_newQrcFileAction->setToolTip(tr("New Resource File"));
@@ -2055,13 +2052,13 @@ QString QtResourceEditorDialog::selectedResource() const
     if (!currentResourcePrefix)
         return QString();
 
-    const QChar slash(QLatin1Char('/'));
+    const QChar slash(u'/');
     QString resource = currentResourcePrefix->prefix();
     if (!resource.startsWith(slash))
         resource.prepend(slash);
     if (!resource.endsWith(slash))
         resource.append(slash);
-    resource.prepend(QLatin1Char(':'));
+    resource.prepend(u':');
 
     QtResourceFile *currentResourceFile = d_ptr->getCurrentResourceFile();
     if (!currentResourceFile)
@@ -2071,8 +2068,8 @@ QString QtResourceEditorDialog::selectedResource() const
     if (!currentResourceFile->alias().isEmpty())
         resourceEnding = currentResourceFile->alias();
 
-    const QString dotSlash(QStringLiteral("./"));
-    const QString dotDotSlash(QStringLiteral("../"));
+    const auto dotSlash = "./"_L1;
+    const auto dotDotSlash = "../"_L1;
     while (true) {
         if (resourceEnding.startsWith(slash))
             resourceEnding = resourceEnding.mid(1);

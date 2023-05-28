@@ -16,6 +16,8 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 namespace qdesigner_internal {
 
 class ItemPropertyBrowser : public QtTreePropertyBrowser
@@ -28,7 +30,7 @@ public:
         const QString widthSampleString = QCoreApplication::translate("ItemPropertyBrowser", "XX Icon Selected off");
         m_width = fontMetrics().horizontalAdvance(widthSampleString);
         setSplitterPosition(m_width);
-        m_width += fontMetrics().horizontalAdvance(QStringLiteral("/this/is/some/random/path"));
+        m_width += fontMetrics().horizontalAdvance(u"/this/is/some/random/path"_s);
     }
 
     QSize sizeHint() const override
@@ -45,7 +47,6 @@ AbstractItemEditor::AbstractItemEditor(QDesignerFormWindowInterface *form, QWidg
     : QWidget(parent),
       m_iconCache(qobject_cast<FormWindowBase *>(form)->iconCache())
 {
-    setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
     m_propertyManager = new DesignerPropertyManager(form->core(), this);
     m_editorFactory = new DesignerEditorFactory(form->core(), this);
     m_editorFactory->setSpacing(0);
@@ -104,16 +105,16 @@ void AbstractItemEditor::setupProperties(const PropertyDefinition *propList,
         }
         Q_ASSERT(prop);
         if (role == Qt::ToolTipPropertyRole || role == Qt::WhatsThisPropertyRole)
-            prop->setAttribute(QStringLiteral("validationMode"), ValidationRichText);
+            prop->setAttribute(u"validationMode"_s, ValidationRichText);
         else if (role == Qt::DisplayPropertyRole)
-            prop->setAttribute(QStringLiteral("validationMode"), ValidationMultiLine);
+            prop->setAttribute(u"validationMode"_s, ValidationMultiLine);
         else if (role == Qt::StatusTipPropertyRole)
-            prop->setAttribute(QStringLiteral("validationMode"), ValidationSingleLine);
+            prop->setAttribute(u"validationMode"_s, ValidationSingleLine);
         else if (role == ItemFlagsShadowRole)
-            prop->setAttribute(QStringLiteral("flagNames"), c2qStringList(itemFlagNames));
+            prop->setAttribute(u"flagNames"_s, c2qStringList(itemFlagNames));
         else if (role == Qt::CheckStateRole)
-            prop->setAttribute(QStringLiteral("enumNames"), c2qStringList(checkStateNames));
-        prop->setAttribute(QStringLiteral("resettable"), true);
+            prop->setAttribute(u"enumNames"_s, c2qStringList(checkStateNames));
+        prop->setAttribute(u"resettable"_s, true);
         m_properties.append(prop);
         m_rootProperties.append(prop);
         m_propertyToRole.insert(prop, role);
@@ -272,10 +273,10 @@ ItemListEditor::ItemListEditor(QDesignerFormWindowInterface *form, QWidget *pare
             this, &ItemListEditor::togglePropertyBrowser);
     setPropertyBrowserVisible(false);
 
-    QIcon upIcon = createIconSet(QString::fromUtf8("up.png"));
-    QIcon downIcon = createIconSet(QString::fromUtf8("down.png"));
-    QIcon minusIcon = createIconSet(QString::fromUtf8("minus.png"));
-    QIcon plusIcon = createIconSet(QString::fromUtf8("plus.png"));
+    QIcon upIcon = createIconSet(u"up.png"_s);
+    QIcon downIcon = createIconSet(u"down.png"_s);
+    QIcon minusIcon = createIconSet(u"minus.png"_s);
+    QIcon plusIcon = createIconSet(u"plus.png"_s);
     ui.moveListItemUpButton->setIcon(upIcon);
     ui.moveListItemDownButton->setIcon(downIcon);
     ui.newListItemButton->setIcon(plusIcon);
@@ -400,9 +401,11 @@ void ItemListEditor::setItemData(int role, const QVariant &v)
 {
     QListWidgetItem *item = ui.listWidget->currentItem();
     bool reLayout = false;
-    if ((role == Qt::EditRole && (v.toString().count(QLatin1Char('\n')) != item->data(role).toString().count(QLatin1Char('\n'))))
-        || role == Qt::FontRole)
+    if ((role == Qt::EditRole
+         && (v.toString().count(u'\n') != item->data(role).toString().count(u'\n')))
+        || role == Qt::FontRole) {
             reLayout = true;
+    }
     QVariant newValue = v;
     if (role == Qt::FontRole && newValue.metaType().id() == QMetaType::QFont) {
         QFont oldFont = ui.listWidget->font();

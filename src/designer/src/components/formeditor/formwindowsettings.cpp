@@ -16,6 +16,8 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 namespace qdesigner_internal {
 
 // Data structure containing form dialog data providing comparison
@@ -151,8 +153,6 @@ FormWindowSettings::FormWindowSettings(QDesignerFormWindowInterface *parent) :
     m_ui->gridPanel->setCheckable(true);
     m_ui->gridPanel->setResetButtonVisible(false);
 
-    setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
-
     QString deviceProfileName = m_formWindow->deviceProfileName();
     if (deviceProfileName.isEmpty())
         deviceProfileName = tr("None");
@@ -189,9 +189,9 @@ FormWindowData FormWindowSettings::data() const
 
     const QString hints = m_ui->includeHintsTextEdit->toPlainText();
     if (!hints.isEmpty()) {
-        rc.includeHints = hints.split(QLatin1Char('\n'));
+        rc.includeHints = hints.split(u'\n');
         // Purge out any lines consisting of blanks only
-        const QRegularExpression blankLine(QStringLiteral("^\\s*$"));
+        const QRegularExpression blankLine(u"^\\s*$"_s);
         Q_ASSERT(blankLine.isValid());
         rc.includeHints.erase(std::remove_if(rc.includeHints.begin(), rc.includeHints.end(),
                                              [blankLine](const QString &hint){ return blankLine.match(hint).hasMatch(); }),
@@ -223,7 +223,7 @@ void FormWindowSettings::setData(const FormWindowData &data)
     if (data.includeHints.isEmpty()) {
         m_ui->includeHintsTextEdit->clear();
     } else {
-        m_ui->includeHintsTextEdit->setText(data.includeHints.join(QLatin1Char('\n')));
+        m_ui->includeHintsTextEdit->setText(data.includeHints.join(u'\n'));
     }
 
     m_ui->gridPanel->setChecked(data.hasFormGrid);

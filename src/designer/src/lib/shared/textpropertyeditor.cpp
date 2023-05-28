@@ -17,9 +17,11 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 namespace {
-    const QChar NewLineChar(QLatin1Char('\n'));
-    const QLatin1String EscapedNewLine("\\n");
+    const QChar NewLineChar(u'\n');
+    const auto EscapedNewLine = "\\n"_L1;
 
     // A validator that replaces offending strings
     class ReplacementValidator : public QValidator {
@@ -130,7 +132,7 @@ namespace {
     QUrl UrlValidator::guessUrlFromString(const QString &string) const
     {
         const QString urlStr = string.trimmed();
-        const QRegularExpression qualifiedUrl(QStringLiteral("^[a-zA-Z]+\\:.*$"));
+        const QRegularExpression qualifiedUrl(u"^[a-zA-Z]+\\:.*$"_s);
         Q_ASSERT(qualifiedUrl.isValid());
 
         // Check if it looks like a qualified URL. Try parsing it and see.
@@ -142,8 +144,8 @@ namespace {
         }
 
         // Might be a Qt resource
-        if (string.startsWith(QStringLiteral(":/")))
-            return QUrl(QStringLiteral("qrc") + string);
+        if (string.startsWith(":/"_L1))
+            return QUrl("qrc"_L1 + string);
 
         // Might be a file.
         if (QFile::exists(urlStr))
@@ -151,15 +153,15 @@ namespace {
 
         // Might be a short url - try to detect the schema.
         if (!hasSchema) {
-            const int dotIndex = urlStr.indexOf(QLatin1Char('.'));
+            const int dotIndex = urlStr.indexOf(u'.');
             if (dotIndex != -1) {
                 const QString prefix = urlStr.left(dotIndex).toLower();
                 QString urlString;
-                if (prefix == QStringLiteral("ftp"))
+                if (prefix == "ftp"_L1)
                     urlString += prefix;
                 else
-                    urlString += QStringLiteral("http");
-                urlString += QStringLiteral("://");
+                    urlString += "http"_L1;
+                urlString += "://"_L1;
                 urlString += urlStr;
                 const QUrl url(urlString, QUrl::TolerantMode);
                 if (url.isValid())
@@ -221,30 +223,29 @@ namespace qdesigner_internal {
             break;
         case ValidationSingleLine:
             // Set a  validator that replaces newline characters by a blank.
-            m_lineEdit->setValidator(new ReplacementValidator(m_lineEdit, NewLineChar, QString(QLatin1Char(' '))));
+            m_lineEdit->setValidator(new ReplacementValidator(m_lineEdit, NewLineChar, QString(u' ')));
              m_lineEdit->setCompleter(nullptr);
             break;
         case ValidationObjectName:
-            setRegularExpressionValidator(QStringLiteral("^[_a-zA-Z][_a-zA-Z0-9]{1,1023}$"));
+            setRegularExpressionValidator(u"^[_a-zA-Z][_a-zA-Z0-9]{1,1023}$"_s);
              m_lineEdit->setCompleter(nullptr);
              break;
         case ValidationObjectNameScope:
-            setRegularExpressionValidator(QStringLiteral("^[_a-zA-Z:][_a-zA-Z0-9:]{1,1023}$"));
+            setRegularExpressionValidator(u"^[_a-zA-Z:][_a-zA-Z0-9:]{1,1023}$"_s);
             m_lineEdit->setCompleter(nullptr);
             break;
         case ValidationURL: {
-            static QStringList urlCompletions;
-            if (urlCompletions.isEmpty()) {
-                urlCompletions.push_back(QStringLiteral("about:blank"));
-                urlCompletions.push_back(QStringLiteral("http://"));
-                urlCompletions.push_back(QStringLiteral("http://www."));
-                urlCompletions.push_back(QStringLiteral("http://qt.io"));
-                urlCompletions.push_back(QStringLiteral("file://"));
-                urlCompletions.push_back(QStringLiteral("ftp://"));
-                urlCompletions.push_back(QStringLiteral("data:"));
-                urlCompletions.push_back(QStringLiteral("data:text/html,"));
-                urlCompletions.push_back(QStringLiteral("qrc:/"));
-            }
+            static const QStringList urlCompletions = {
+                u"about:blank"_s,
+                u"http://"_s,
+                u"http://www."_s,
+                u"http://qt.io"_s,
+                u"file://"_s,
+                u"ftp://"_s,
+                u"data:"_s,
+                u"data:text/html,"_s,
+                u"qrc:/"_s,
+            };
             QCompleter *completer = new QCompleter(urlCompletions, m_lineEdit);
             m_lineEdit->setCompleter(completer);
             m_lineEdit->setValidator(new UrlValidator(completer, m_lineEdit));
@@ -351,9 +352,9 @@ namespace qdesigner_internal {
 
         QString rc(s);
         // protect backslashes
-        rc.replace(QLatin1Char('\\'), QStringLiteral("\\\\"));
+        rc.replace('\\'_L1, "\\\\"_L1);
         // escape newlines
-        rc.replace(NewLineChar, QString(EscapedNewLine));
+        rc.replace(u'\n', EscapedNewLine);
         return rc;
 
     }
@@ -367,14 +368,14 @@ namespace qdesigner_internal {
             return s;
 
         QString rc(s);
-        for (qsizetype pos = 0; (pos = rc.indexOf(QLatin1Char('\\'),pos)) >= 0 ; ) {
+        for (qsizetype pos = 0; (pos = rc.indexOf(u'\\', pos)) >= 0 ; ) {
             // found an escaped character. If not a newline or at end of string, leave as is, else insert '\n'
             const qsizetype nextpos = pos + 1;
             if (nextpos  >= rc.size())  // trailing '\\'
                  break;
             // Escaped NewLine
-            if (rc.at(nextpos) ==  QChar(QLatin1Char('n')))
-                 rc[nextpos] =  NewLineChar;
+            if (rc.at(nextpos) == u'n')
+                 rc[nextpos] = u'\n';
             // Remove escape, go past escaped
             rc.remove(pos,1);
             pos++;

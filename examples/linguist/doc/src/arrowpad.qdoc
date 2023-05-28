@@ -3,8 +3,11 @@
 
 /*!
     \example arrowpad
-    \title Arrow Pad Example
     \ingroup examples-linguist
+    \examplecategory {Internationalization}
+
+    \title Arrow Pad Example
+
     \brief Understanding the Qt Linguist \e contexts concept and using two
     or more languages.
 

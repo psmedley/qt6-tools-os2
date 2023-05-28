@@ -98,7 +98,7 @@ private:
     };
 
     enum TokenType {
-        Tok_Eof, Tok_class, Tok_friend, Tok_namespace, Tok_using, Tok_return,
+        Tok_Eof, Tok_class, Tok_enum, Tok_friend, Tok_namespace, Tok_using, Tok_return,
         Tok_Q_OBJECT, Tok_Access, Tok_Cancel,
         Tok_Ident, Tok_String, Tok_RawString, Tok_Arrow, Tok_Colon, Tok_ColonColon,
         Tok_Equals, Tok_LeftBracket, Tok_RightBracket, Tok_QuestionMark,
@@ -335,8 +335,17 @@ CppParser::TokenType CppParser::lookAheadToSemicolonOrLeftBrace()
     }
 }
 
+static bool isStringLiteralPrefix(const QStringView s)
+{
+    return s == u"L"_s
+        || s == u"U"_s
+        || s == u"u"_s
+        || s == u"u8"_s;
+}
+
 static const QString strQ_OBJECT = u"Q_OBJECT"_s;
 static const QString strclass = u"class"_s;
+static const QString strenum = u"enum"_s;
 static const QString strfinal = u"final"_s;
 static const QString strfriend = u"friend"_s;
 static const QString strnamespace = u"namespace"_s;
@@ -563,6 +572,11 @@ CppParser::TokenType CppParser::getToken()
 
             //qDebug() << "IDENT: " << yyWord;
 
+            if (yyCh == '"' && isStringLiteralPrefix(yyWord)) {
+                // Handle prefixed string literals as ordinary string literals.
+                continue;
+            }
+
             switch (yyWord.unicode()[0].unicode()) {
             case 'N':
                 if (yyWord == strNULL)
@@ -579,6 +593,10 @@ CppParser::TokenType CppParser::getToken()
             case 'c':
                 if (yyWord == strclass)
                     return Tok_class;
+                break;
+            case 'e':
+                if (yyWord == strenum)
+                    return Tok_enum;
                 break;
             case 'f':
                 if (yyWord == strfriend)
@@ -2063,6 +2081,12 @@ void CppParser::parseInternal(ConversionData &cd, const QStringList &includeStac
                 metaExpected = false;
             }
             yyTok = getToken();
+            break;
+        case Tok_enum:
+            yyTok = getToken();
+            // If it is an enum class then ignore
+            if (yyTok == Tok_class)
+                yyTok = getToken();
             break;
         default:
             if (!yyParenDepth)

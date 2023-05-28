@@ -35,6 +35,8 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 namespace qdesigner_internal {
     // PromotionParameters
     struct PromotionParameters {
@@ -58,7 +60,7 @@ namespace qdesigner_internal {
         setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Maximum);
         QHBoxLayout *hboxLayout = new QHBoxLayout(this);
 
-        m_classNameEdit->setValidator(new QRegularExpressionValidator(QRegularExpression(QStringLiteral("^[_a-zA-Z:][:_a-zA-Z0-9]*$")), m_classNameEdit));
+        m_classNameEdit->setValidator(new QRegularExpressionValidator(QRegularExpression(u"^[_a-zA-Z:][:_a-zA-Z0-9]*$"_s), m_classNameEdit));
         connect(m_classNameEdit,   &QLineEdit::textChanged,
                 this, &NewPromotedClassPanel::slotNameChanged);
         connect(m_includeFileEdit, &QLineEdit::textChanged,
@@ -129,12 +131,11 @@ namespace qdesigner_internal {
     void NewPromotedClassPanel::slotNameChanged(const QString &className) {
         // Suggest a name
         if (!className.isEmpty()) {
-            const QChar dot(QLatin1Char('.'));
             QString suggestedHeader = m_promotedHeaderLowerCase ?
                                       className.toLower() : className;
-            suggestedHeader.replace(QStringLiteral("::"), QString(QLatin1Char('_')));
-            if (!m_promotedHeaderSuffix.startsWith(dot))
-                suggestedHeader += dot;
+            suggestedHeader.replace("::"_L1, "_"_L1);
+            if (!m_promotedHeaderSuffix.startsWith(u'.'))
+                suggestedHeader += u'.';
             suggestedHeader += m_promotedHeaderSuffix;
 
             const bool blocked = m_includeFileEdit->blockSignals(true);
@@ -183,12 +184,11 @@ namespace qdesigner_internal {
         m_model(new PromotionModel(core)),
         m_treeView(new QTreeView),
         m_buttonBox(nullptr),
-        m_removeButton(new QPushButton(createIconSet(QString::fromUtf8("minus.png")), QString()))
+        m_removeButton(new QPushButton(createIconSet(u"minus.png"_s), QString()))
     {
         m_buttonBox = createButtonBox();
         setModal(true);
         setWindowTitle(tr("Promoted Widgets"));
-        setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
 
         QVBoxLayout *vboxLayout = new QVBoxLayout(this);
 
@@ -227,7 +227,7 @@ namespace qdesigner_internal {
             preselectedBaseClass = baseClassNameList.indexOf(m_promotableWidgetClassName);
         }
         if (preselectedBaseClass == -1)
-            preselectedBaseClass = baseClassNameList.indexOf(QStringLiteral("QFrame"));
+            preselectedBaseClass = baseClassNameList.indexOf("QFrame"_L1);
 
         NewPromotedClassPanel *newPromotedClassPanel = new NewPromotedClassPanel(baseClassNameList, preselectedBaseClass);
         newPromotedClassPanel->setPromotedHeaderSuffix(core->integration()->headerSuffix());

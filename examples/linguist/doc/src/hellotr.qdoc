@@ -4,6 +4,8 @@
 /*!
     \example hellotr
     \ingroup examples-linguist
+    \examplecategory {Internationalization}
+
     \title Hello tr() Example
 
     \brief Translating a small Hello World program to Latin.
@@ -117,7 +119,7 @@
     \snippet doc/snippets/doc_src_examples_hellotr.qdoc 5
 
     You should now have a file \c hellotr_la.ts in
-    the current directory, containing this:
+    the source directory, containing this:
 
     \snippet doc/snippets/doc_src_examples_hellotr.qdoc 1
 
