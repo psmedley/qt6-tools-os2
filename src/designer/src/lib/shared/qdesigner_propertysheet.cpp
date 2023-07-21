@@ -31,6 +31,7 @@
 #include <QtGui/qaction.h>
 
 #include <QtCore/qdebug.h>
+#include <QtCore/qhash.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -96,14 +97,13 @@ static bool hasLayoutAttributes(QDesignerFormEditorInterface *core, QObject *obj
 static const qdesigner_internal::DesignerMetaEnum &designerMetaEnumFor(const QDesignerMetaEnumInterface *me)
 {
     using ScopeNameKey = QPair<QString, QString>;
-    using DesignerMetaEnumCache = QMap<ScopeNameKey, qdesigner_internal::DesignerMetaEnum>;
-    static DesignerMetaEnumCache cache;
+    static QMap<ScopeNameKey, qdesigner_internal::DesignerMetaEnum> cache;
 
     const QString name = me->name();
     const QString scope = me->scope();
 
     const ScopeNameKey key = ScopeNameKey(scope, name);
-    DesignerMetaEnumCache::iterator it = cache.find(key);
+    auto it = cache.find(key);
     if (it == cache.end()) {
         qdesigner_internal::DesignerMetaEnum dme = qdesigner_internal::DesignerMetaEnum(name, scope, me->separator());
         const int keyCount = me->keyCount();
@@ -118,14 +118,13 @@ static const qdesigner_internal::DesignerMetaEnum &designerMetaEnumFor(const QDe
 static const qdesigner_internal::DesignerMetaFlags &designerMetaFlagsFor(const QDesignerMetaEnumInterface *me)
 {
     using ScopeNameKey = QPair<QString, QString>;
-    using DesignerMetaFlagsCache = QMap<ScopeNameKey, qdesigner_internal::DesignerMetaFlags>;
-    static DesignerMetaFlagsCache cache;
+    static QMap<ScopeNameKey, qdesigner_internal::DesignerMetaFlags> cache;
 
     const QString name = me->name();
     const QString scope = me->scope();
 
     const ScopeNameKey key = ScopeNameKey(scope, name);
-    DesignerMetaFlagsCache::iterator it = cache.find(key);
+    auto it = cache.find(key);
     if (it == cache.end()) {
         qdesigner_internal::DesignerMetaFlags dme = qdesigner_internal::DesignerMetaFlags(name, scope, me->separator());
         const int keyCount = me->keyCount();
@@ -198,8 +197,7 @@ public:
     const ObjectType m_objectType;
     const ObjectFlags m_objectFlags;
 
-    using InfoHash = QHash<int, Info>;
-    InfoHash m_info;
+    QHash<int, Info> m_info;
     QHash<int, QVariant> m_fakeProperties;
     QHash<int, QVariant> m_addProperties;
     QHash<QString, int> m_addIndex;
@@ -423,7 +421,7 @@ QLayout* QDesignerPropertySheetPrivate::layout(QDesignerPropertySheetExtension *
 
 QDesignerPropertySheetPrivate::Info &QDesignerPropertySheetPrivate::ensureInfo(int index)
 {
-    InfoHash::iterator it = m_info.find(index);
+    auto it = m_info.find(index);
     if (it == m_info.end())
         it = m_info.insert(index, Info());
     return it.value();
@@ -431,7 +429,7 @@ QDesignerPropertySheetPrivate::Info &QDesignerPropertySheetPrivate::ensureInfo(i
 
 QDesignerPropertySheet::PropertyType QDesignerPropertySheetPrivate::propertyType(int index) const
 {
-    const InfoHash::const_iterator it = m_info.constFind(index);
+    const auto it = m_info.constFind(index);
     if (it == m_info.constEnd())
         return QDesignerPropertySheet::PropertyNone;
     return it.value().propertyType;
@@ -460,7 +458,7 @@ QString QDesignerPropertySheetPrivate::transformLayoutPropertyName(int index) co
         {QDesignerPropertySheet::PropertyLayoutGridRowMinimumHeight, u"rowMinimumHeight"_s},
         {QDesignerPropertySheet::PropertyLayoutGridColumnMinimumWidth, u"columnMinimumWidth"_s}
     };
-    const TypeNameMap::const_iterator it = typeNameMap.constFind(propertyType(index));
+    const auto it = typeNameMap.constFind(propertyType(index));
     if (it != typeNameMap.constEnd())
         return it.value();
     return QString();
@@ -498,8 +496,7 @@ QDesignerPropertySheet::ObjectFlags QDesignerPropertySheet::objectFlagsFromObjec
 
 QDesignerPropertySheet::PropertyType QDesignerPropertySheet::propertyTypeFromName(const QString &name)
 {
-    typedef QHash<QString, PropertyType> PropertyTypeHash;
-    static const PropertyTypeHash propertyTypeHash= {
+    static const QHash<QString, PropertyType> propertyTypeHash = {
         {QLatin1StringView(layoutObjectNameC),         PropertyLayoutObjectName},
         {QLatin1StringView(layoutLeftMarginC),         PropertyLayoutLeftMargin},
         {QLatin1StringView(layoutTopMarginC),          PropertyLayoutTopMargin},
@@ -1633,8 +1630,7 @@ struct QDesignerAbstractPropertySheetFactory::PropertySheetFactoryPrivate {
     const QString m_propertySheetId;
     const QString m_dynamicPropertySheetId;
 
-    using ExtensionMap = QMap<QObject*, QObject*>;
-    ExtensionMap m_extensions;
+    QHash<QObject *, QObject *> m_extensions;
 };
 
 QDesignerAbstractPropertySheetFactory::PropertySheetFactoryPrivate::PropertySheetFactoryPrivate() :

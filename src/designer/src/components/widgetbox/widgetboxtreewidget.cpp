@@ -91,7 +91,7 @@ QIcon WidgetBoxTreeWidget::iconForWidget(const QString &iconName) const
         return qdesigner_internal::qtLogoIcon();
 
     if (iconName.startsWith(QLatin1String(iconPrefixC))) {
-        const IconCache::const_iterator it = m_pluginIcons.constFind(iconName);
+        const auto it = m_pluginIcons.constFind(iconName);
         if (it != m_pluginIcons.constEnd())
             return it.value();
     }
@@ -230,8 +230,8 @@ WidgetBoxCategoryListView *WidgetBoxTreeWidget::addCategoryView(QTreeWidgetItem 
     categoryView->setViewMode(iconMode ? QListView::IconMode : QListView::ListMode);
     connect(categoryView, &WidgetBoxCategoryListView::scratchPadChanged,
             this, &WidgetBoxTreeWidget::slotSave);
-    connect(categoryView, &WidgetBoxCategoryListView::pressed,
-            this, &WidgetBoxTreeWidget::pressed);
+    connect(categoryView, &WidgetBoxCategoryListView::widgetBoxPressed,
+            this, &WidgetBoxTreeWidget::widgetBoxPressed);
     connect(categoryView, &WidgetBoxCategoryListView::itemRemoved,
             this, &WidgetBoxTreeWidget::slotScratchPadItemDeleted);
     connect(categoryView, &WidgetBoxCategoryListView::lastItemRemoved,

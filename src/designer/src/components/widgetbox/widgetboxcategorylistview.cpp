@@ -107,10 +107,8 @@ public:
     bool removeCustomWidgets();
 
 private:
-    using WidgetBoxCategoryEntrys = QList<WidgetBoxCategoryEntry>;
-
     QDesignerFormEditorInterface *m_core;
-    WidgetBoxCategoryEntrys m_items;
+    QList<WidgetBoxCategoryEntry> m_items;
     QListView::ViewMode m_viewMode;
 };
 
@@ -159,7 +157,7 @@ bool WidgetBoxCategoryModel::removeCustomWidgets()
     // Typically, we are a whole category of custom widgets, so, remove all
     // and do reset.
     bool changed = false;
-    for (WidgetBoxCategoryEntrys::iterator it = m_items.begin(); it != m_items.end(); )
+    for (auto it = m_items.begin(); it != m_items.end(); )
         if (it->widget.type() == QDesignerWidgetBoxInterface::Widget::Custom) {
             if (!changed)
                 beginResetModel();
@@ -382,7 +380,7 @@ void WidgetBoxCategoryListView::slotPressed(const QModelIndex &index)
     const QDesignerWidgetBoxInterface::Widget wgt = m_model->widgetAt(m_proxyModel->mapToSource(index));
     if (wgt.isNull())
         return;
-    emit pressed(wgt.name(), widgetDomXml(wgt), QCursor::pos());
+    emit widgetBoxPressed(wgt.name(), widgetDomXml(wgt), QCursor::pos());
 }
 
 void WidgetBoxCategoryListView::removeCurrentItem()

@@ -32,11 +32,9 @@ protected:
     virtual QObject *createExtension(QObject *object, const QString &iid, QObject *parent) const;
 
 private:
-    typedef QPair<QString,QObject*> IdObjectKey;
-    typedef QMap< IdObjectKey, QObject*> ExtensionMap;
-    mutable ExtensionMap m_extensions;
-    typedef QHash<QObject*, bool> ExtendedSet;
-    mutable ExtendedSet m_extended;
+    mutable QMap<QPair<QString, QObject *>, QObject *> m_extensions;
+    // ### FIXME Qt 7: Use QSet, add out of line destructor.
+    mutable QHash<QObject*, bool>  m_extended;
 };
 
 QT_END_NAMESPACE

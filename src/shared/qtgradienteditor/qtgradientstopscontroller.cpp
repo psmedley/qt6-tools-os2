@@ -15,8 +15,8 @@ class QtGradientStopsControllerPrivate : public QObject
     QtGradientStopsController *q_ptr;
     Q_DECLARE_PUBLIC(QtGradientStopsController)
 public:
-    typedef QMap<qreal, QColor> PositionColorMap;
-    typedef QMap<qreal, QtGradientStop *> PositionStopMap;
+    using PositionColorMap = QMap<qreal, QColor>;
+    using PositionStopMap = QMap<qreal, QtGradientStop *>;
 
     void setUi(Ui::QtGradientEditor *ui);
 
@@ -162,25 +162,16 @@ void QtGradientStopsControllerPrivate::enableCurrent(bool enable)
 QtGradientStopsControllerPrivate::PositionColorMap QtGradientStopsControllerPrivate::stopsData(const PositionStopMap &stops) const
 {
     PositionColorMap data;
-    PositionStopMap::ConstIterator itStop = stops.constBegin();
-    while (itStop != stops.constEnd()) {
-        QtGradientStop *stop = itStop.value();
+    for (QtGradientStop *stop : stops)
         data[stop->position()] = stop->color();
-
-        ++itStop;
-    }
     return data;
 }
 
 QGradientStops QtGradientStopsControllerPrivate::makeGradientStops(const PositionColorMap &data) const
 {
     QGradientStops stops;
-    PositionColorMap::ConstIterator itData = data.constBegin();
-    while (itData != data.constEnd()) {
+    for (auto itData = data.cbegin(), cend = data.cend(); itData != cend; ++itData)
         stops << QPair<qreal, QColor>(itData.key(), itData.value());
-
-        ++itData;
-    }
     return stops;
 }
 

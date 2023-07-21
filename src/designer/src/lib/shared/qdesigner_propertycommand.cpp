@@ -246,6 +246,7 @@ quint64 compareSubProperties(const QFont & f1, const QFont & f2)
     compareFontSubProperty(f1, f2, &QFont::strikeOut,     QFont::StrikeOutResolved, rc);
     compareFontSubProperty(f1, f2, &QFont::kerning,       QFont::KerningResolved, rc);
     compareFontSubProperty(f1, f2, &QFont::styleStrategy, QFont::StyleStrategyResolved, rc);
+    compareFontSubProperty(f1, f2, &QFont::hintingPreference, QFont::HintingPreferenceResolved, rc);
     if (debugPropertyCommands)
         qDebug() << "compareSubProperties " <<  fontString(f1) << fontString(f2) << "\n\treturns " << fontMask(rc);
     return rc;
@@ -447,6 +448,7 @@ QFont applyFontSubProperty(const QFont &oldValue, const QFont &newValue, unsigne
     setFontSubProperty(mask, newValue, QFont::StrikeOutResolved,     &QFont::strikeOut,     &QFont::setStrikeOut, rc);
     setFontSubProperty(mask, newValue, QFont::KerningResolved,       &QFont::kerning,       &QFont::setKerning, rc);
     setFontSubProperty(mask, newValue, QFont::StyleStrategyResolved, &QFont::styleStrategy, &QFont::setStyleStrategy, rc);
+    setFontSubProperty(mask, newValue, QFont::HintingPreferenceResolved, &QFont::hintingPreference, &QFont::setHintingPreference, rc);
     if (debugPropertyCommands)
         qDebug() << "applyFontSubProperty old " <<  fontMask(oldValue.resolveMask()) << " new " << fontMask(newValue.resolveMask()) << " return: " << fontMask(rc.resolveMask());
     return rc;
@@ -1085,7 +1087,7 @@ template <class PropertyListIterator, class Function>
     QDesignerPropertyEditorInterface *propertyEditor = core->propertyEditor();
     bool updatedPropertyEditor = false;
 
-    for (PropertyListIterator it = begin; it != end; ++it) {
+    for (auto it = begin; it != end; ++it) {
         PropertyHelper *ph = it->get();
         if (QObject* object = ph->object()) { // Might have been deleted in the meantime
             const PropertyHelper::Value newValue = function( *ph );
@@ -1476,8 +1478,7 @@ bool RemoveDynamicPropertyCommand::init(const QObjectList &selection, QObject *c
 void RemoveDynamicPropertyCommand::redo()
 {
     QDesignerFormEditorInterface *core = formWindow()->core();
-    QMap<QObject *, QPair<QVariant, bool> >::ConstIterator it = m_objectToValueAndChanged.constBegin();
-    while (it != m_objectToValueAndChanged.constEnd()) {
+    for (auto it = m_objectToValueAndChanged.cbegin(), end = m_objectToValueAndChanged.cend(); it != end; ++it) {
         QObject *obj = it.key();
         QDesignerDynamicPropertySheetExtension *dynamicSheet = qt_extension<QDesignerDynamicPropertySheetExtension*>(core->extensionManager(), obj);
         QDesignerPropertySheetExtension *sheet = qt_extension<QDesignerPropertySheetExtension*>(core->extensionManager(), obj);
@@ -1486,15 +1487,13 @@ void RemoveDynamicPropertyCommand::redo()
             if (propertyEditor->object() == obj)
                 propertyEditor->setObject(obj);
         }
-        ++it;
     }
 }
 
 void RemoveDynamicPropertyCommand::undo()
 {
     QDesignerFormEditorInterface *core = formWindow()->core();
-    QMap<QObject *, QPair<QVariant, bool> >::ConstIterator it = m_objectToValueAndChanged.constBegin();
-    while (it != m_objectToValueAndChanged.constEnd()) {
+    for (auto it = m_objectToValueAndChanged.cbegin(), end = m_objectToValueAndChanged.cend(); it != end; ++it) {
         QObject *obj = it.key();
         QDesignerPropertySheetExtension *propertySheet = qt_extension<QDesignerPropertySheetExtension*>(core->extensionManager(), obj);
         QDesignerDynamicPropertySheetExtension *dynamicSheet = qt_extension<QDesignerDynamicPropertySheetExtension*>(core->extensionManager(), obj);
@@ -1504,7 +1503,6 @@ void RemoveDynamicPropertyCommand::undo()
             if (propertyEditor->object() == obj)
                 propertyEditor->setObject(obj);
         }
-        ++it;
     }
 }
 
