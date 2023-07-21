@@ -5,6 +5,7 @@
 #include "qtgradientstopsmodel.h"
 
 #include <QtCore/QMap>
+#include <QtCore/QHash>
 #include <QtCore/QMimeData>
 #include <QtGui/QImage>
 #include <QtGui/QPainter>
@@ -21,9 +22,6 @@ class QtGradientStopsWidgetPrivate : public QObject
     QtGradientStopsWidget *q_ptr;
     Q_DECLARE_PUBLIC(QtGradientStopsWidget)
 public:
-    typedef QMap<qreal, QColor> PositionColorMap;
-    typedef QMap<QtGradientStop *, qreal> StopPositionMap;
-
     void setGradientStopsModel(QtGradientStopsModel *model);
 
     void slotStopAdded(QtGradientStop *stop);
@@ -76,9 +74,9 @@ public:
 
     bool m_moving;
     int m_moveOffset;
-    StopPositionMap m_moveStops;
+    QHash<QtGradientStop *, qreal> m_moveStops;
 
-    PositionColorMap m_moveOriginal;
+    QMap<qreal, QColor> m_moveOriginal;
 };
 
 void QtGradientStopsWidgetPrivate::setGradientStopsModel(QtGradientStopsModel *model)
@@ -123,7 +121,7 @@ void QtGradientStopsWidgetPrivate::setGradientStopsModel(QtGradientStopsModel *m
         connect(m_model, &QtGradientStopsModel::currentStopChanged,
                     this, &QtGradientStopsWidgetPrivate::slotCurrentStopChanged);
 
-        const QtGradientStopsModel::PositionStopMap stopsMap = m_model->stops();
+        const auto stopsMap = m_model->stops();
         for (auto it = stopsMap.cbegin(), end = stopsMap.cend(); it != end; ++it)
             slotStopAdded(it.value());
 
@@ -432,7 +430,6 @@ void QtGradientStopsWidget::setGradientStopsModel(QtGradientStopsModel *model)
 
 void QtGradientStopsWidget::mousePressEvent(QMouseEvent *e)
 {
-    typedef QtGradientStopsModel::PositionStopMap PositionStopMap;
     if (!d_ptr->m_model)
         return;
 
@@ -451,8 +448,8 @@ void QtGradientStopsWidget::mousePressEvent(QMouseEvent *e)
         } else if (e->modifiers() & Qt::ShiftModifier) {
             QtGradientStop *oldCurrent = d_ptr->m_model->currentStop();
             if (oldCurrent) {
-                PositionStopMap stops = d_ptr->m_model->stops();
-                PositionStopMap::ConstIterator itSt = stops.constFind(oldCurrent->position());
+                const auto stops = d_ptr->m_model->stops();
+                auto itSt = stops.constFind(oldCurrent->position());
                 if (itSt != stops.constEnd()) {
                     while (itSt != stops.constFind(stop->position())) {
                         d_ptr->m_model->selectStop(itSt.value(), true);
@@ -495,9 +492,6 @@ void QtGradientStopsWidget::mouseReleaseEvent(QMouseEvent *e)
 
 void QtGradientStopsWidget::mouseMoveEvent(QMouseEvent *e)
 {
-    typedef QtGradientStopsWidgetPrivate::PositionColorMap PositionColorMap;
-    typedef QtGradientStopsModel::PositionStopMap PositionStopMap;
-    typedef QtGradientStopsWidgetPrivate::StopPositionMap StopPositionMap;
     if (!d_ptr->m_model)
         return;
 
@@ -511,7 +505,7 @@ void QtGradientStopsWidget::mouseMoveEvent(QMouseEvent *e)
         double maxOffset = 0.0;
         double minOffset = 0.0;
         bool first = true;
-        StopPositionMap::ConstIterator itStop = d_ptr->m_moveStops.constBegin();
+        auto itStop = d_ptr->m_moveStops.cbegin();
         while (itStop != d_ptr->m_moveStops.constEnd()) {
             double offset = itStop.value();
 
@@ -531,7 +525,7 @@ void QtGradientStopsWidget::mouseMoveEvent(QMouseEvent *e)
         double viewportMin = d_ptr->toViewport(-minOffset);
         double viewportMax = d_ptr->toViewport(1.0 - maxOffset);
 
-        PositionStopMap newPositions;
+        QtGradientStopsModel::PositionStopMap newPositions;
 
         int viewportX = e->position().toPoint().x() - d_ptr->m_moveOffset;
 
@@ -557,7 +551,7 @@ void QtGradientStopsWidget::mouseMoveEvent(QMouseEvent *e)
         }
 
         bool forward = true;
-        PositionStopMap::ConstIterator itNewPos = newPositions.constBegin();
+        auto itNewPos = newPositions.cbegin();
         if (itNewPos.value()->position() < itNewPos.key())
             forward = false;
 
@@ -581,7 +575,7 @@ void QtGradientStopsWidget::mouseMoveEvent(QMouseEvent *e)
                 ++itNewPos;
         }
 
-        PositionColorMap::ConstIterator itOld = d_ptr->m_moveOriginal.constBegin();
+        auto itOld = d_ptr->m_moveOriginal.cbegin();
         while (itOld != d_ptr->m_moveOriginal.constEnd()) {
             double position = itOld.key();
             if (!d_ptr->m_model->at(position))
@@ -671,7 +665,6 @@ void QtGradientStopsWidget::mouseDoubleClickEvent(QMouseEvent *e)
 
 void QtGradientStopsWidget::keyPressEvent(QKeyEvent *e)
 {
-    typedef QtGradientStopsModel::PositionStopMap PositionStopMap;
     if (!d_ptr->m_model)
         return;
 
@@ -679,7 +672,7 @@ void QtGradientStopsWidget::keyPressEvent(QKeyEvent *e)
         d_ptr->m_model->deleteStops();
     } else if (e->key() == Qt::Key_Left || e->key() == Qt::Key_Right ||
                 e->key() == Qt::Key_Home || e->key() == Qt::Key_End) {
-        PositionStopMap stops = d_ptr->m_model->stops();
+        const auto stops = d_ptr->m_model->stops();
         if (stops.isEmpty())
             return;
         QtGradientStop *newCurrent = nullptr;
@@ -690,7 +683,7 @@ void QtGradientStopsWidget::keyPressEvent(QKeyEvent *e)
             else if (e->key() == Qt::Key_Right || e->key() == Qt::Key_End)
                 newCurrent = (--stops.constEnd()).value();
         } else {
-            PositionStopMap::ConstIterator itStop = stops.constBegin();
+            auto itStop = stops.cbegin();
             while (itStop.value() != current)
                 ++itStop;
             if (e->key() == Qt::Key_Left && itStop != stops.constBegin())

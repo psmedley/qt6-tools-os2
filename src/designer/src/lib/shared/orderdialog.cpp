@@ -35,6 +35,11 @@ OrderDialog::OrderDialog(QWidget *parent) :
     connect(m_ui->pageList->model(), &QAbstractItemModel::rowsRemoved,
             this, &OrderDialog::slotEnableButtonsAfterDnD);
 
+    connect(m_ui->upButton, &QAbstractButton::clicked, this, &OrderDialog::upButtonClicked);
+    connect(m_ui->downButton, &QAbstractButton::clicked, this, &OrderDialog::downButtonClicked);
+    connect(m_ui->pageList, &QListWidget::currentRowChanged,
+            this, &OrderDialog::pageListCurrentRowChanged);
+
     m_ui->upButton->setEnabled(false);
     m_ui->downButton->setEnabled(false);
 }
@@ -64,8 +69,7 @@ void OrderDialog::setPageList(const QWidgetList &pages)
 void OrderDialog::buildList()
 {
     m_ui->pageList->clear();
-    const OrderMap::const_iterator cend = m_orderMap.constEnd();
-    for (OrderMap::const_iterator it = m_orderMap.constBegin(); it != cend; ++it) {
+    for (auto it = m_orderMap.cbegin(), cend = m_orderMap.cend(); it != cend; ++it) {
         QListWidgetItem *item = new QListWidgetItem();
         const int index = it.key();
         switch (m_format) {
@@ -100,7 +104,7 @@ QWidgetList OrderDialog::pageList() const
     return rc;
 }
 
-void OrderDialog::on_upButton_clicked()
+void OrderDialog::upButtonClicked()
 {
     const int row = m_ui->pageList->currentRow();
     if (row <= 0)
@@ -110,7 +114,7 @@ void OrderDialog::on_upButton_clicked()
     m_ui->pageList->setCurrentRow(row - 1);
 }
 
-void OrderDialog::on_downButton_clicked()
+void OrderDialog::downButtonClicked()
 {
     const int row = m_ui->pageList->currentRow();
     if (row == -1 || row == m_ui->pageList->count() - 1)
@@ -125,7 +129,7 @@ void OrderDialog::slotEnableButtonsAfterDnD()
     enableButtons(m_ui->pageList->currentRow());
 }
 
-void OrderDialog::on_pageList_currentRowChanged(int r)
+void OrderDialog::pageListCurrentRowChanged(int r)
 {
     enableButtons(r);
 }

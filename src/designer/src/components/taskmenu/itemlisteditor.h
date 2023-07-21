@@ -28,8 +28,10 @@ class DesignerEditorFactory;
 class BoolBlocker
 {
 public:
-    inline BoolBlocker(bool &b):block(b), reset(b){block = true;}
-    inline ~BoolBlocker(){block = reset; }
+    Q_DISABLE_COPY_MOVE(BoolBlocker);
+
+    inline explicit BoolBlocker(bool &b) noexcept : block(b), reset(b) { block = true; }
+    inline ~BoolBlocker() noexcept { block = reset; }
 private:
     bool &block;
     bool reset;
@@ -108,12 +110,12 @@ signals:
     void itemMovedDown(int idx);
 
 private slots:
-    void on_newListItemButton_clicked();
-    void on_deleteListItemButton_clicked();
-    void on_moveListItemUpButton_clicked();
-    void on_moveListItemDownButton_clicked();
-    void on_listWidget_currentRowChanged();
-    void on_listWidget_itemChanged(QListWidgetItem * item);
+    void newListItemButtonClicked();
+    void deleteListItemButtonClicked();
+    void moveListItemUpButtonClicked();
+    void moveListItemDownButtonClicked();
+    void listWidgetCurrentRowChanged();
+    void listWidgetItemChanged(QListWidgetItem * item);
     void togglePropertyBrowser();
     void cacheReloaded();
 

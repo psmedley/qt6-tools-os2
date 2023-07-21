@@ -4,6 +4,7 @@
 #ifndef FONTPROPERTYMANAGER_H
 #define FONTPROPERTYMANAGER_H
 
+#include <QtCore/qhash.h>
 #include <QtCore/qmap.h>
 #include <QtCore/qstringlist.h>
 #include <QtGui/qfont.h>
@@ -30,7 +31,7 @@ class FontPropertyManager {
 public:
     FontPropertyManager();
 
-    using ResetMap = QMap<QtProperty *, bool>;
+    using ResetMap = QHash<QtProperty *, bool>;
     using NameMap = QMap<QString, QString>;
 
     // Call before QtVariantPropertyManager::initializeProperty.
@@ -55,24 +56,36 @@ public:
     static bool readFamilyMapping(NameMap *rc, QString *errorMessage);
 
 private:
-    using PropertyToPropertyMap = QMap<QtProperty *, QtProperty *>;
+    using PropertyToPropertyMap = QHash<QtProperty *, QtProperty *>;
     using PropertyList = QList<QtProperty *>;
-    using PropertyToSubPropertiesMap = QMap<QtProperty *, PropertyList>;
 
     void removeAntialiasingProperty(QtProperty *);
+    void removeHintingPreferenceProperty(QtProperty *);
+    int antialiasingValueChanged(QtVariantPropertyManager *vm,
+                                 QtProperty *antialiasingProperty, const QVariant &value);
+    int hintingPreferenceValueChanged(QtVariantPropertyManager *vm,
+                                      QtProperty *hintingPreferenceProperty,
+                                      const QVariant &value);
     void updateModifiedState(QtProperty *property, const QVariant &value);
     static int antialiasingToIndex(QFont::StyleStrategy antialias);
     static QFont::StyleStrategy indexToAntialiasing(int idx);
+    static int hintingPreferenceToIndex(QFont::HintingPreference h);
+    static QFont::HintingPreference indexToHintingPreference(int idx);
+
     static unsigned fontFlag(int idx);
 
     PropertyToPropertyMap m_propertyToAntialiasing;
     PropertyToPropertyMap m_antialiasingToProperty;
+    PropertyToPropertyMap m_propertyToHintingPreference;
+    PropertyToPropertyMap m_hintingPreferenceToProperty;
 
-    PropertyToSubPropertiesMap m_propertyToFontSubProperties;
-    QMap<QtProperty *, int> m_fontSubPropertyToFlag;
+
+    QHash<QtProperty *, PropertyList> m_propertyToFontSubProperties;
+    QHash<QtProperty *, int> m_fontSubPropertyToFlag;
     PropertyToPropertyMap m_fontSubPropertyToProperty;
     QtProperty *m_createdFontProperty = nullptr;
     QStringList m_aliasingEnumNames;
+    QStringList m_hintingPreferenceEnumNames;
     // Font families with Designer annotations
     QStringList m_designerFamilyNames;
     NameMap m_familyMappings;

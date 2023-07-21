@@ -26,6 +26,8 @@ QT_BEGIN_NAMESPACE
 class Transaction
 {
 public:
+    Q_DISABLE_COPY_MOVE(Transaction);
+
     Transaction(const QString &connectionName)
         : m_db(QSqlDatabase::database(connectionName)),
           m_inTransaction(m_db.driver()->hasFeature(QSqlDriver::Transactions))
@@ -72,8 +74,9 @@ bool QHelpCollectionHandler::isDBOpened() const
 {
     if (m_query)
         return true;
-    emit error(tr("The collection file \"%1\" is not set up yet.").
-               arg(m_collectionFile));
+    auto *that = const_cast<QHelpCollectionHandler *>(this);
+    emit that->error(tr("The collection file \"%1\" is not set up yet.").
+                     arg(m_collectionFile));
     return false;
 }
 

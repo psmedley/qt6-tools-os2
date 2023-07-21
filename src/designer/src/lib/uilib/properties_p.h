@@ -55,6 +55,7 @@ class QAbstractFormBuilderGadget: public QWidget
     Q_PROPERTY(QPalette::ColorRole colorRole READ fakeColorRole)
     Q_PROPERTY(QPalette::ColorGroup colorGroup READ fakeColorGroup)
     Q_PROPERTY(QFont::StyleStrategy styleStrategy READ fakeStyleStrategy)
+    Q_PROPERTY(QFont::HintingPreference hintingPreference READ fakeHintingPreference)
     Q_PROPERTY(Qt::CursorShape cursorShape READ fakeCursorShape)
     Q_PROPERTY(Qt::BrushStyle brushStyle READ fakeBrushStyle)
     Q_PROPERTY(Qt::ToolBarArea toolBarArea READ fakeToolBarArea)
@@ -71,6 +72,7 @@ public:
     QPalette::ColorGroup fakeColorGroup() const { Q_ASSERT(0); return static_cast<QPalette::ColorGroup>(0); }
     QPalette::ColorRole fakeColorRole() const   { Q_ASSERT(0); return static_cast<QPalette::ColorRole>(0); }
     QFont::StyleStrategy fakeStyleStrategy() const     { Q_ASSERT(0); return QFont::PreferDefault; }
+    QFont::HintingPreference fakeHintingPreference() const { Q_ASSERT(0); return QFont::PreferDefaultHinting; }
     Qt::CursorShape fakeCursorShape() const     { Q_ASSERT(0); return Qt::ArrowCursor; }
     Qt::BrushStyle fakeBrushStyle() const       { Q_ASSERT(0); return Qt::NoBrush; }
     Qt::ToolBarArea fakeToolBarArea() const {  Q_ASSERT(0); return Qt::NoToolBarArea; }
@@ -92,7 +94,7 @@ inline EnumType enumKeyToValue(const QMetaEnum &metaEnum,const char *key, const 
     if (val == -1) {
 
         uiLibWarning(QCoreApplication::translate("QFormBuilder", "The enumeration-value '%1' is invalid. The default value '%2' will be used instead.")
-                    .arg(QString::fromUtf8(key)).arg(QString::fromUtf8(metaEnum.key(0))));
+                    .arg(QString::fromUtf8(key), QString::fromUtf8(metaEnum.key(0))));
         val = metaEnum.value(0);
     }
     return static_cast<EnumType>(val);

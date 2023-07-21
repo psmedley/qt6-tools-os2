@@ -59,6 +59,8 @@ class QTextBuilder;
 class QDESIGNER_UILIB_EXPORT QFormBuilderExtra
 {
 public:
+    Q_DISABLE_COPY_MOVE(QFormBuilderExtra);
+
     QFormBuilderExtra();
     ~QFormBuilderExtra();
 
@@ -159,8 +161,7 @@ private:
     void clearResourceBuilder();
     void clearTextBuilder();
 
-    using BuddyHash = QHash<QLabel*, QString>;
-    BuddyHash m_buddies;
+    QHash<QLabel *, QString> m_buddies;
 
     QHash<QString, CustomWidgetData> m_customWidgetDataHash;
 

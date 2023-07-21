@@ -53,9 +53,9 @@ public:
     Format format() const     { return m_format; }
 
 private slots:
-    void on_upButton_clicked();
-    void on_downButton_clicked();
-    void on_pageList_currentRowChanged(int row);
+    void upButtonClicked();
+    void downButtonClicked();
+    void pageListCurrentRowChanged(int row);
     void slotEnableButtonsAfterDnD();
     void slotReset();
 
@@ -63,8 +63,7 @@ private:
     void buildList();
     void enableButtons(int r);
 
-    typedef QMap<int, QWidget*> OrderMap;
-    OrderMap m_orderMap;
+    QMap<int, QWidget *> m_orderMap;
     Ui::OrderDialog* m_ui;
     Format m_format;
 };

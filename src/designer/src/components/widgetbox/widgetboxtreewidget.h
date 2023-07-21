@@ -57,7 +57,8 @@ public:
     QIcon iconForWidget(const QString &iconName) const;
 
 signals:
-    void pressed(const QString &name, const QString &dom_xml, const QPoint &global_mouse_pos);
+    void widgetBoxPressed(const QString &name, const QString &dom_xml,
+                          const QPoint &global_mouse_pos);
 
 public slots:
     void filter(const QString &);
@@ -98,8 +99,7 @@ private:
 
     QDesignerFormEditorInterface *m_core;
     QString m_file_name;
-    using IconCache = QHash<QString, QIcon>;
-    mutable IconCache m_pluginIcons;
+    mutable QHash<QString, QIcon> m_pluginIcons;
     bool m_iconMode;
     QTimer *m_scratchPadDeleteTimer;
 };

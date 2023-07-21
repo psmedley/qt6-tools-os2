@@ -18,6 +18,7 @@
 #include <QtDesigner/qextensionmanager.h>
 
 #include <QtCore/qdebug.h>
+#include <QtCore/qhash.h>
 #include <QtCore/qlist.h>
 #include <QtCore/qset.h>
 
@@ -342,8 +343,7 @@ void Layout::undoLayout()
 
 void Layout::breakLayout()
 {
-    typedef QMap<QWidget *, QRect> WidgetRectMap;
-    WidgetRectMap rects;
+    QHash<QWidget *, QRect> rects;
     /* Store the geometry of the widgets. The idea is to give the user space
      * to rearrange them, so, we do a adjustSize() on them, unless they want
      * to grow (expanding widgets like QTextEdit), in which the geometry is
@@ -1095,7 +1095,7 @@ void removeIntVecDuplicates(QList<int> &v)
     if (v.size() < 2)
         return;
 
-    for (QList<int>::iterator current = v.begin() ; (current != v.end()) && ((current+1) != v.end()) ; )
+    for (auto current = v.begin() ; (current != v.end()) && ((current + 1) != v.end()) ; )
         if ( *current == *(current+1) )
             v.erase(current+1);
         else
