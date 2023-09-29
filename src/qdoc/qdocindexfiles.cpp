@@ -400,6 +400,8 @@ void QDocIndexFiles::readIndexSection(QXmlStreamReader &reader, Node *current,
         if (attributes.value(QLatin1String("bindable")) == QLatin1String("true"))
             propNode->setPropertyType(PropertyNode::PropertyType::BindableProperty);
 
+        propNode->setWritable(attributes.value(QLatin1String("writable")) != QLatin1String("false"));
+
         if (!indexUrl.isEmpty())
             location = Location(indexUrl + QLatin1Char('/') + parent->name().toLower() + ".html");
         else if (!indexUrl.isNull())
@@ -1009,6 +1011,9 @@ bool QDocIndexFiles::generateIndexSection(QXmlStreamWriter &writer, Node *node,
         if (propertyNode->propertyType() == PropertyNode::PropertyType::BindableProperty)
             writer.writeAttribute("bindable", "true");
 
+        if (!propertyNode->isWritable())
+            writer.writeAttribute("writable", "false");
+
         if (!brief.isEmpty())
             writer.writeAttribute("brief", brief);
         // Property access function names
@@ -1242,7 +1247,7 @@ void QDocIndexFiles::generateFunctionSection(QXmlStreamWriter &writer, FunctionN
         index file, but it is not read back in by qdoc. However,
         we need it for the webxml generator.
         */
-        QString signature = fn->signature(false, false);
+        QString signature = fn->signature(Node::SignatureReturnType);
         // 'const' is already part of FunctionNode::signature()
         if (fn->isFinal())
             signature += " final";

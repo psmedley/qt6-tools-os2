@@ -1663,14 +1663,16 @@ void HtmlGenerator::generateNavigationBar(const QString &title, const Node *node
                     navNodes.push_front(currentNode->navigationParent());
                 currentNode = currentNode->navigationParent();
             }
-            // If no nav. parent was found but the page is in a single group, use that
+            // If no nav. parent was found but the page is a \group member, add a link to the
+            // (first) group page.
             if (navNodes.empty()) {
-                QStringList groups = static_cast<const PageNode *>(node)->groupNames();
-                if (groups.size() == 1) {
-                    const Node *groupNode =
-                            m_qdb->findNodeByNameAndType(QStringList(groups[0]), &Node::isGroup);
-                    if (groupNode && !groupNode->title().isEmpty())
+                const QStringList groups = static_cast<const PageNode *>(node)->groupNames();
+                for (const auto &groupName : groups) {
+                    const auto *groupNode = m_qdb->findNodeByNameAndType(QStringList{groupName}, &Node::isGroup);
+                    if (groupNode && !groupNode->title().isEmpty()) {
                         navNodes.push_front(groupNode);
+                        break;
+                    }
                 }
             }
             while (!navNodes.empty()) {
@@ -1724,9 +1726,9 @@ void HtmlGenerator::generateHeader(const QString &title, const Node *node, CodeM
         out() << "<!-- " << node->doc().location().fileName() << " -->\n";
 
     if (node && !node->doc().briefText().isEmpty()) {
-        out() << "  <meta name=\"description\" content=\"";
-        generateText(node->doc().briefText(), node, marker);
-        out() << "\">\n";
+        out() << "  <meta name=\"description\" content=\""
+              << protectEnc(node->doc().briefText().toString())
+              << "\">\n";
     }
 
     // determine the rest of the <title> element content: "title | titleSuffix version"
@@ -2908,22 +2910,23 @@ void HtmlGenerator::generateQmlItem(const Node *node, const Node *relative, Code
 }
 
 /*!
-  This function generates a simple bullet list for the members
-  of collection node \a {cn}. The collection node must be a group
-  and must not be empty. If it is empty, nothing is output, and
-  false is returned. Otherewise, the list is generated and true is returned.
+  This function generates a simple unordered list for the members
+  of collection node \a {cn}. Returns \c true if the list was
+  generated (collection has members), \c false otherwise.
  */
 bool HtmlGenerator::generateGroupList(CollectionNode *cn)
 {
     m_qdb->mergeCollections(cn);
     if (cn->members().isEmpty())
         return false;
+
+    NodeList members{cn->members()};
+    std::sort(members.begin(), members.end(), Node::nodeNameLessThan);
     out() << "<ul>\n";
-    const auto members = cn->members();
-    for (const auto *node : members) {
-        out() << "<li>"
-              << "<a href=\"#" << Doc::canonicalTitle(node->title()) << "\">" << node->title()
-              << "</a></li>\n";
+    for (const auto *node : std::as_const(members)) {
+        out() << "<li translate=\"no\">";
+        generateFullName(node, nullptr);
+        out() << "</li>\n";
     }
     out() << "</ul>\n";
     return true;

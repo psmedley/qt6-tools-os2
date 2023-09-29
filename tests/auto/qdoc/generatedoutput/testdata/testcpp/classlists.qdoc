@@ -38,4 +38,11 @@
 /*!
     \group cpptypes
     \title Test C++ Types
+
+    \generatelist testgroup
+*/
+
+/*!
+    \externalpage https://doc.qt.io/qt/17-qdoc-commands-thread.html#reentrant-command
+    \title reentrant
 */
