@@ -70,6 +70,7 @@ namespace TestQDoc {
 \endif
     \ingroup testgroup
     \ingroup cpptypes
+    \reentrant
 */
 
 /*!
@@ -80,6 +81,7 @@ namespace TestQDoc {
 
 /*!
     \fn Test &Test::operator=(Test &&other)
+    \ingroup testgroup
 
     Move-assigns \a other.
 */
@@ -87,7 +89,7 @@ namespace TestQDoc {
 /*!
     \class TestQDoc::TestDerived
     \inmodule TestCPP
-    \brief A derived class in a namespace.
+    \brief A class in a namespace, derived from \l [CPP] Test.
 */
 
 /*!
@@ -142,6 +144,7 @@ void Test::anotherObsoleteMember()
 }
 
 /*!
+    \nonreentrant
     Function that takes a parameter \a i and \a b.
 \if defined(test_ignoresince)
     \since 2.0
@@ -325,6 +328,14 @@ void TestDerived::staticObsoleteMember()
 int TestDerived::id()
 {
     return 1;
+}
+
+/*!
+    Returns a value using an aliases type.
+*/
+TestDerived::NotTypedef TestDerived::someValue()
+{
+    return 0;
 }
 
 /*!

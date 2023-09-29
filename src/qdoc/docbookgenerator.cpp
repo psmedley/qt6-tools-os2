@@ -501,7 +501,10 @@ qsizetype DocBookGenerator::generateAtom(const Atom *atom, const Node *relative)
                    || atom->string() == QLatin1String("related")) {
             generateList(relative, atom->string());
             hasGeneratedSomething = true; // Approximation, because there is
-            // some nontrivial logic in generateList.
+                                          // some nontrivial logic in generateList.
+        } else if (const auto *cn = m_qdb->getCollectionNode(atom->string(), Node::Group); cn) {
+            generateAnnotatedList(cn, cn->members(), atom->string(), ItemizedList);
+            hasGeneratedSomething = true; // Approximation
         }
 
         // There must still be some content generated for the DocBook document
@@ -1920,7 +1923,7 @@ void DocBookGenerator::generateList(const Node *relative, const QString &selecto
   A two-column table is output.
  */
 void DocBookGenerator::generateAnnotatedList(const Node *relative, const NodeList &nodeList,
-                                             const QString &selector, bool withSectionIfNeeded)
+                                             const QString &selector, GeneratedListType type)
 {
     if (nodeList.isEmpty())
         return;
@@ -1933,13 +1936,14 @@ void DocBookGenerator::generateAnnotatedList(const Node *relative, const NodeLis
 
     // Detect if there is a need for a variablelist (i.e. titles mapped to
     // descriptions) or a regular itemizedlist (only titles).
-    bool noItemsHaveTitle = std::all_of(nodeList.begin(), nodeList.end(),
-                                        [](const Node* node) {
-                                            return node->doc().briefText().toString().isEmpty();
-                                        });
+    bool noItemsHaveTitle =
+            type == ItemizedList || std::all_of(nodeList.begin(), nodeList.end(),
+                    [](const Node* node) {
+                        return node->doc().briefText().toString().isEmpty();
+                    });
 
     // Wrap the list in a section if needed.
-    if (withSectionIfNeeded && m_hasSection)
+    if (type == AutoSection && m_hasSection)
         startSection("", "Contents");
 
     // From WebXMLGenerator::generateAnnotatedList.
@@ -1948,7 +1952,9 @@ void DocBookGenerator::generateAnnotatedList(const Node *relative, const NodeLis
         m_writer->writeAttribute("role", selector);
         newLine();
 
-        for (const auto &node : nodeList) {
+        NodeList members{nodeList};
+        std::sort(members.begin(), members.end(), Node::nodeNameLessThan);
+        for (const auto &node : std::as_const(members)) {
             if (node->isInternal() || node->isDeprecated())
                 continue;
 
@@ -1986,7 +1992,7 @@ void DocBookGenerator::generateAnnotatedList(const Node *relative, const NodeLis
         newLine();
     }
 
-    if (withSectionIfNeeded && m_hasSection)
+    if (type == AutoSection && m_hasSection)
         endSection();
 }
 
@@ -3000,7 +3006,7 @@ void DocBookGenerator::generateSignatureList(const NodeList &nodes)
         m_writer->writeStartElement(dbNamespace, "para");
 
         generateSimpleLink(currentGenerator()->fullDocumentLocation(*n),
-                           (*n)->signature(false, true));
+                           (*n)->signature(Node::SignaturePlain));
 
         m_writer->writeEndElement(); // para
         newLine();
@@ -3423,7 +3429,7 @@ void DocBookGenerator::generateReimplementsClause(const FunctionNode *fn)
             m_writer->writeStartElement(dbNamespace, "para");
             m_writer->writeCharacters("Reimplements: ");
             QString fullName =
-                    overrides->parent()->name() + "::" + overrides->signature(false, true);
+                    overrides->parent()->name() + "::" + overrides->signature(Node::SignaturePlain);
             generateFullName(overrides->parent(), fullName, overrides);
             m_writer->writeCharacters(".");
             m_writer->writeEndElement(); // para
@@ -3871,7 +3877,7 @@ void DocBookGenerator::generateDocBookSynopsis(const Node *node)
                                  associatedProperties.join(QLatin1Char(',')));
         }
 
-        QString signature = functionNode->signature(false, false);
+        QString signature = functionNode->signature(Node::SignatureReturnType);
         // 'const' is already part of FunctionNode::signature()
         if (functionNode->isFinal())
             signature += " final";
@@ -5261,7 +5267,7 @@ void DocBookGenerator::generateCollectionNode(CollectionNode *cn)
     generateAlsoList(cn);
 
     if (!cn->noAutoList() && (cn->isGroup() || cn->isQmlModule()))
-        generateAnnotatedList(cn, cn->members(), "members", true);
+        generateAnnotatedList(cn, cn->members(), "members", AutoSection);
 
     if (generatedTitle)
         endSection();
