@@ -127,6 +127,7 @@ qt_internal_add_module(DesignerComponentsPrivate
         uic
     PRECOMPILED_HEADER
         "lib_pch.h"
+    OS2_SHORT_NAME Qt6Des
 )
 
 set(ui_sources
