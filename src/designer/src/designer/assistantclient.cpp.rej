@@ -1,0 +1,19 @@
+--- src/designer/src/designer/assistantclient.cpp	2023-03-29 00:53:12.000000000 +1030
++++ src/designer/src/designer/assistantclient.cpp	2023-05-16 19:16:26.000000000 +0930
+@@ -72,13 +71,13 @@
+ {
+     QString app = QLibraryInfo::path(QLibraryInfo::BinariesPath) + QDir::separator();
+ #if !defined(Q_OS_MACOS)
+-    app += QStringLiteral("assistant");
++    app += "assistant"_L1;
+ #else
+-    app += QStringLiteral("Assistant.app/Contents/MacOS/Assistant");
++    app += "Assistant.app/Contents/MacOS/Assistant"_L1;
+ #endif
+ 
+ #if defined(Q_OS_WIN)
+-    app += QStringLiteral(".exe");
++    app += ".exe"_L1;
+ #endif
+ 
+     return app;

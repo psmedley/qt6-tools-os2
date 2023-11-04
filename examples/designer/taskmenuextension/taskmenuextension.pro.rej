@@ -1,0 +1,23 @@
+--- examples/designer/taskmenuextension/taskmenuextension.pro	2022-12-13 03:41:50.000000000 +1030
++++ examples/designer/taskmenuextension/taskmenuextension.pro	2023-03-12 12:46:32.000000000 +1030
+@@ -11,16 +11,17 @@
+ } else {
+ # Public example:
+ 
+-#! [1]
++#! [0]
+ TEMPLATE = lib
+ CONFIG  += plugin
+-#! [1]
++#! [0]
+ 
+ TARGET = $$qtLibraryTarget($$TARGET)
+ 
++#! [3]
+ target.path = $$[QT_INSTALL_PLUGINS]/designer
+ INSTALLS += target
+-
++#! [3]
+ }
+ 
+ #! [2]

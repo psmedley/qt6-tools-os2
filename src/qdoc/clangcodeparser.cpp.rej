@@ -1,0 +1,20 @@
+--- src/qdoc/clangcodeparser.cpp	2022-09-07 10:36:14.000000000 +0930
++++ src/qdoc/clangcodeparser.cpp	2022-12-13 03:41:50.000000000 +1030
+@@ -1207,7 +1211,17 @@
+ }
+ 
+ static const char *defaultArgs_[] = {
++/*
++  https://bugreports.qt.io/browse/QTBUG-94365
++  An unidentified bug in Clang 15.x causes parsing failures due to errors in
++  the AST. This replicates only with C++20 support enabled - avoid the issue
++  by using C++17 with Clang 15.
++ */
++#if LIBCLANG_VERSION_MAJOR == 15
++    "-std=c++17",
++#else
+     "-std=c++20",
++#endif
+ #ifndef Q_OS_WIN
+     "-fPIC",
+ #else
