@@ -72,7 +72,7 @@ static CXTranslationUnit_Flags flags_ = static_cast<CXTranslationUnit_Flags>(0);
 static CXIndex index_ = nullptr;
 
 QByteArray ClangCodeParser::s_fn;
-constexpr const char *fnDummyFileName = "/fn_dummyfile.cpp";
+constexpr const char fnDummyFileName[] = "/fn_dummyfile.cpp";
 
 #ifndef QT_NO_DEBUG_STREAM
 template<class T>
@@ -200,6 +200,48 @@ static Access fromCX_CXXAccessSpecifier(CX_CXXAccessSpecifier spec)
 /*!
    Returns the spelling in the file for a source range
  */
+
+struct FileCacheEntry
+{
+    QByteArray fileName;
+    QByteArray content;
+};
+
+static inline QString fromCache(const QByteArray &cache,
+                                unsigned int offset1, unsigned int offset2)
+{
+    return QString::fromUtf8(cache.mid(offset1, offset2 - offset1));
+}
+
+static QString readFile(CXFile cxFile, unsigned int offset1, unsigned int offset2)
+{
+    using FileCache = QList<FileCacheEntry>;
+    static FileCache cache;
+
+    CXString cxFileName = clang_getFileName(cxFile);
+    const QByteArray fileName = clang_getCString(cxFileName);
+    clang_disposeString(cxFileName);
+
+    for (const auto &entry : std::as_const(cache)) {
+        if (fileName == entry.fileName)
+            return fromCache(entry.content, offset1, offset2);
+    }
+
+    // "fn_dummyfile.cpp" comes with varying cxFile values
+    if (fileName == fnDummyFileName)
+        return fromCache(ClangCodeParser::fn(), offset1, offset2);
+
+    QFile file(QString::fromUtf8(fileName));
+    if (file.open(QIODeviceBase::ReadOnly)) { // binary to match clang offsets
+        FileCacheEntry entry{fileName, file.readAll()};
+        cache.prepend(entry);
+        while (cache.size() > 5)
+            cache.removeLast();
+        return fromCache(entry.content, offset1, offset2);
+    }
+    return {};
+}
+
 static QString getSpelling(CXSourceRange range)
 {
     auto start = clang_getRangeStart(range);
@@ -211,14 +253,8 @@ static QString getSpelling(CXSourceRange range)
 
     if (file1 != file2 || offset2 <= offset1)
         return QString();
-    QFile file(fromCXString(clang_getFileName(file1)));
-    if (!file.open(QFile::ReadOnly)) {
-        if (file.fileName() == fnDummyFileName)
-            return QString::fromUtf8(ClangCodeParser::fn().mid(offset1, offset2 - offset1));
-        return QString();
-    }
-    file.seek(offset1);
-    return QString::fromUtf8(file.read(offset2 - offset1));
+
+    return readFile(file1, offset1, offset2);
 }
 
 /*!
@@ -969,32 +1005,44 @@ bool ClangVisitor::parseProperty(const QString &spelling, const Location &loc)
 
     QString signature = spelling.mid(lpIdx + 1, rpIdx - lpIdx - 1);
     signature = signature.simplified();
-
-    QString type;
-    QString name;
     QStringList parts = signature.split(QChar(' '), Qt::SkipEmptyParts);
-    if (parts.size() < 2)
+
+    static const QStringList attrs =
+            QStringList() << "READ"     << "MEMBER"     << "WRITE"
+                          << "NOTIFY"   << "CONSTANT"   << "FINAL"
+                          << "REQUIRED" << "BINDABLE"   << "DESIGNABLE"
+                          << "RESET"    << "REVISION"   << "SCRIPTABLE"
+                          << "STORED"   << "USER";
+
+    // Find the location of the first attribute. All preceding parts
+    // represent the property type + name.
+    auto it = std::find_if(parts.cbegin(), parts.cend(),
+                           [](const QString &attr) -> bool {
+        return attrs.contains(attr);
+    });
+
+    if (it == parts.cend() || std::distance(parts.cbegin(), it) < 2)
         return false;
-    if (parts.first() == QLatin1String("enum"))
-        parts.removeFirst(); // QTBUG-80027
 
-    type = parts.takeFirst();
-    if (type == QLatin1String("const") && !parts.empty())
-        type += " " + parts.takeFirst();
+    QStringList typeParts;
+    std::copy(parts.cbegin(), it, std::back_inserter(typeParts));
+    parts.erase(parts.cbegin(), it);
+    QString name = typeParts.takeLast();
 
-    if (!parts.empty())
-        name = parts.takeFirst();
-    else
-        return false;
-
-    if (name.front() == QChar('*')) {
-        type.append(QChar('*'));
+    // Move the pointer operator(s) from name to type
+    while (!name.isEmpty() && name.front() == QChar('*')) {
+        typeParts.last().push_back(name.front());
         name.remove(0, 1);
     }
+
+    // Need at least READ or MEMBER + getter/member name
+    if (parts.size() < 2 || name.isEmpty())
+        return false;
+
     auto *property = new PropertyNode(parent_, name);
     property->setAccess(Access::Public);
     property->setLocation(loc);
-    property->setDataType(type);
+    property->setDataType(typeParts.join(QChar(' ')));
 
     int i = 0;
     while (i < parts.size()) {
@@ -1011,6 +1059,8 @@ bool ClangVisitor::parseProperty(const QString &spelling, const Location &loc)
                 qdb_->addPropertyFunction(property, value, PropertyNode::Getter);
             } else if (key == "WRITE") {
                 qdb_->addPropertyFunction(property, value, PropertyNode::Setter);
+                property->setWritable(true);
+            } else if (key == "MEMBER") {
                 property->setWritable(true);
             } else if (key == "STORED") {
                 property->setStored(value.toLower() == "true");
@@ -1338,8 +1388,7 @@ void ClangCodeParser::buildPCH()
             m_args.push_back("-xc++");
             CXTranslationUnit tu;
             QString tmpHeader = m_pchFileDir->path() + "/" + module;
-            QFile tmpHeaderFile(tmpHeader);
-            if (tmpHeaderFile.open(QIODevice::Text | QIODevice::WriteOnly)) {
+            if (QFile tmpHeaderFile(tmpHeader); tmpHeaderFile.open(QIODevice::Text | QIODevice::WriteOnly)) {
                 QTextStream out(&tmpHeaderFile);
                 if (header.isEmpty()) {
                     for (auto it = m_allHeaders.constKeyValueBegin();
@@ -1359,7 +1408,6 @@ void ClangCodeParser::buildPCH()
                     }
                     out << QLatin1String("#include \"") + header + QLatin1String("\"");
                 }
-                tmpHeaderFile.close();
             }
 
             CXErrorCode err =
