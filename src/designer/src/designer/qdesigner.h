@@ -50,21 +50,17 @@ signals:
 public slots:
     void showErrorMessage(const QString &message);
 
-private slots:
-    void callCreateForm();
-
 private:
     void showErrorMessageBox(const QString &);
 
-    QDesignerServer *m_server;
-    QDesignerClient *m_client;
-    QDesignerWorkbench *m_workbench;
+    QDesignerServer *m_server = nullptr;
+    QDesignerClient *m_client = nullptr;
+    QDesignerWorkbench *m_workbench = nullptr;
     QPointer<MainWindowBase> m_mainWindow;
     QPointer<QErrorMessage> m_errorMessageDialog;
 
     QString m_initializationErrors;
     QString m_lastErrorMessage;
-    bool m_suppressNewFormShow;
 };
 
 QT_END_NAMESPACE

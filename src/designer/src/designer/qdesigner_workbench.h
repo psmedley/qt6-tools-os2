@@ -29,6 +29,7 @@ class QMenuBar;
 class QToolBar;
 class QMdiSubWindow;
 class QCloseEvent;
+class QScreen;
 class ToolBarManager;
 
 class QDesignerFormEditorInterface;
@@ -64,11 +65,6 @@ public:
 
     QActionGroup *modeActionGroup() const;
 
-    QRect availableGeometry() const;
-    QRect desktopGeometry() const;
-
-    int marginHint() const;
-
     bool readInForm(const QString &fileName) const;
     bool writeOutForm(QDesignerFormWindowInterface *formWindow, const QString &fileName) const;
     bool saveForm(QDesignerFormWindowInterface *fw);
@@ -76,6 +72,9 @@ public:
     bool readInBackup();
     void updateBackup(QDesignerFormWindowInterface* fwi);
     void applyUiSettings();
+
+    bool suppressNewFormShow() const { return m_suppressNewFormShow; }
+    void setSuppressNewFormShow(bool v) { m_suppressNewFormShow = v; }
 
 signals:
     void modeChanged(UIMode mode);
@@ -86,6 +85,7 @@ public slots:
     void removeFormWindow(QDesignerFormWindow *formWindow);
     void bringAllToFront();
     void toggleFormMinimizationState();
+    void showNewForm();
 
 private slots:
     void switchToNeutralMode();
@@ -104,6 +104,8 @@ private slots:
     void slotFileDropped(const QString &f);
 
 private:
+    QScreen *screen() const;
+    QRect availableFormGeometry() const;
     QWidget *magicalParent(const QWidget *w) const;
     Qt::WindowFlags magicalWindowFlags(const QWidget *widgetForFlags) const;
     QDesignerFormWindowManagerInterface *formWindowManager() const;
@@ -146,9 +148,9 @@ private:
     // interface modes.
     class Position {
     public:
-        Position(const QDockWidget *dockWidget);
-        Position(const QMdiSubWindow *mdiSubWindow, const QPoint &mdiAreaOffset);
-        Position(const QWidget *topLevelWindow, const QPoint &desktopTopLeft);
+        explicit Position(const QDockWidget *dockWidget);
+        explicit Position(const QMdiSubWindow *mdiSubWindow);
+        explicit Position(const QWidget *topLevelWindow);
 
         void applyTo(QMdiSubWindow *mdiSubWindow, const QPoint &mdiAreaOffset) const;
         void applyTo(QWidget *topLevelWindow, const QPoint &desktopTopLeft) const;
@@ -167,6 +169,7 @@ private:
     enum State { StateInitializing, StateUp, StateClosing };
     State m_state = StateInitializing;
     bool m_uiSettingsChanged = false; // UI mode changed in preference dialog, trigger delayed slot.
+    bool m_suppressNewFormShow = false;
 };
 
 QT_END_NAMESPACE

@@ -8,6 +8,12 @@
 #include <QtCore/qstring.h>
 #include <QtGui/qicon.h>
 
+#if 0
+#pragma qt_deprecates(QtDesigner/customwidget.h)
+#pragma qt_deprecates(QtDesigner/QDesignerCustomWidgetInterface)
+#pragma qt_deprecates(QtDesigner/QDesignerCustomWidgetCollectionInterface)
+#endif
+
 QT_BEGIN_NAMESPACE
 
 class QWidget;
@@ -34,7 +40,7 @@ public:
 
     virtual QString domXml() const
     {
-        return QString::fromUtf8("<widget class=\"%1\" name=\"%2\"/>")
+        return QLatin1StringView("<widget class=\"%1\" name=\"%2\"/>")
             .arg(name(), name().toLower());
     }
 

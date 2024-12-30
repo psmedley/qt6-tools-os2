@@ -195,11 +195,54 @@ set(lupdate_translations \"${ts_files}\")
     endif()
 
     if(NOT arg_NO_GLOBAL_TARGET)
-        if(NOT TARGET ${QT_GLOBAL_LUPDATE_TARGET})
-            add_custom_target(${QT_GLOBAL_LUPDATE_TARGET})
+        if(CMAKE_GENERATOR MATCHES "^Visual Studio ")
+            # For the Visual Studio generators we cannot use add_dependencies, because this would
+            # enable ${target}_lupdate in the default build of the solution. See QTBUG-115166 and
+            # upstream CMake issue #16668 for details. Instead, we record ${target}_lupdate and
+            # create an update_translations target at the end of the top-level directory scope.
+            if(${CMAKE_VERSION} VERSION_LESS "3.19.0")
+                if(NOT QT_NO_GLOBAL_LUPDATE_TARGET_CREATION_WARNING)
+                    message(WARNING
+                        "Cannot create target ${QT_GLOBAL_LUPDATE_TARGET} with this CMake version. "
+                        "Please upgrade to CMake 3.19.0 or newer. "
+                        "Set QT_NO_GLOBAL_LUPDATE_TARGET_CREATION_WARNING to ON to disable this "
+                        "warning."
+                    )
+                endif()
+                return()
+            endif()
+            set(property_name _qt_target_${QT_GLOBAL_LUPDATE_TARGET}_dependencies)
+            get_property(recorded_targets GLOBAL PROPERTY ${property_name})
+            if("${recorded_targets}" STREQUAL "")
+                cmake_language(EVAL CODE
+                    "cmake_language(DEFER DIRECTORY \"${CMAKE_SOURCE_DIR}\" CALL _qt_internal_add_global_lupdate_target_deferred \"${QT_GLOBAL_LUPDATE_TARGET}\")"
+                )
+            endif()
+            set_property(GLOBAL APPEND PROPERTY ${property_name} ${target}_lupdate)
+
+            # Exclude ${target}_lupdate from the solution's default build to avoid it being enabled
+            # should the user add a dependency to it.
+            set_property(TARGET ${target}_lupdate PROPERTY EXCLUDE_FROM_DEFAULT_BUILD ON)
+        else()
+            if(NOT TARGET ${QT_GLOBAL_LUPDATE_TARGET})
+                add_custom_target(${QT_GLOBAL_LUPDATE_TARGET})
+            endif()
+            add_dependencies(${QT_GLOBAL_LUPDATE_TARGET} ${target}_lupdate)
         endif()
-        add_dependencies(${QT_GLOBAL_LUPDATE_TARGET} ${target}_lupdate)
     endif()
+endfunction()
+
+# Hack for the Visual Studio generator. Create the global lupdate target named ${target} and work
+# around the lack of a working add_dependencies by calling 'cmake --build' for every dependency.
+function(_qt_internal_add_global_lupdate_target_deferred target)
+    get_property(target_dependencies GLOBAL PROPERTY _qt_target_${target}_dependencies)
+    set(target_commands "")
+    foreach(dependency IN LISTS target_dependencies)
+        list(APPEND target_commands
+            COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" -t ${dependency}
+        )
+    endforeach()
+    add_custom_target(${target} ${target_commands})
 endfunction()
 
 function(qt6_add_lrelease target)
@@ -221,6 +264,7 @@ function(qt6_add_lrelease target)
             $<TARGET_FILE:${QT_CMAKE_EXPORT_NAMESPACE}::lrelease>)
 
     set(qm_files "")
+    set(supported_languages "")
     foreach(ts_file ${ts_files})
         if(NOT EXISTS "${ts_file}")
             message(WARNING "Translation file '${ts_file}' does not exist. "
@@ -234,6 +278,20 @@ function(qt6_add_lrelease target)
 <TS/>
 ]])
         endif()
+
+        if(APPLE)
+            execute_process(COMMAND /usr/bin/xmllint --xpath "string(/TS/@language)" ${ts_file}
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                OUTPUT_VARIABLE language_code
+                ERROR_VARIABLE xmllint_error)
+            if(language_code AND NOT xmllint_error)
+                list(APPEND supported_languages "${language_code}")
+            else()
+                message(WARNING "Failed to resolve language code for ${ts_file}. "
+                    "Please update CFBundleLocalizations in your Info.plist manually.")
+            endif()
+        endif()
+
         get_filename_component(qm ${ts_file} NAME_WLE)
         string(APPEND qm ".qm")
         get_source_file_property(output_location ${ts_file} OUTPUT_LOCATION)
@@ -280,6 +338,12 @@ function(qt6_add_lrelease target)
             _qt_resource_target_dependency "${target}_lrelease"
         )
     endforeach()
+
+    if(APPLE)
+        set_property(TARGET "${target}" APPEND PROPERTY
+            _qt_apple_supported_languages "${supported_languages}"
+        )
+    endif()
 
     add_custom_target(${target}_lrelease DEPENDS ${qm_files})
     if(NOT arg_NO_TARGET_DEPENDENCY)
