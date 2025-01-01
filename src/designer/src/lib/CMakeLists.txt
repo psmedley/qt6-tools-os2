@@ -188,6 +188,7 @@ qt_internal_add_module(Designer
         uic
     PRECOMPILED_HEADER
         "lib_pch.h"
+    OS2_SHORT_NAME Qt6Desnr
 )
 
 set(ui_sources
