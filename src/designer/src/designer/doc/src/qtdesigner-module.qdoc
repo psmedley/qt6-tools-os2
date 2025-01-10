@@ -3,13 +3,13 @@
 
 /*!
     \module QtDesigner
-    \title Qt Designer C++ Classes
+    \title Qt Widgets Designer C++ Classes
     \ingroup modules
     \qtcmakepackage Designer
     \qtvariable designer
 
     \brief Provides classes to create your own custom widget plugins for
-    Qt Designer and classes to access Qt Designer components.
+    \QD and classes to access \QD components.
 
     In addition, the QFormBuilder class provides the possibility of
     constructing user interfaces from UI files at run-time.

@@ -8,7 +8,7 @@
 #include "qdesigner_formwindow.h"
 #include "qdesigner_toolwindow.h"
 #include "qdesigner_settings.h"
-#include "qttoolbardialog.h"
+#include "qttoolbardialog_p.h"
 
 #include <QtDesigner/abstractformwindow.h>
 
@@ -28,8 +28,6 @@
 #include <QtCore/qmimedata.h>
 
 #include <algorithm>
-
-static const char uriListMimeFormatC[] = "text/uri-list";
 
 QT_BEGIN_NAMESPACE
 
@@ -107,7 +105,7 @@ QList<QToolBar *> MainWindowBase::createToolBars(const QDesignerActions *actions
 
 QString MainWindowBase::mainWindowTitle()
 {
-    return tr("Qt Designer");
+    return tr("Qt Widgets Designer");
 }
 
 // Use the minor Qt version as settings versions to avoid conflicts
@@ -134,7 +132,7 @@ QStringList DockedMdiArea::uiFiles(const QMimeData *d) const
 {
     // Extract dropped UI files from Mime data.
     QStringList rc;
-    if (!d->hasFormat(QLatin1StringView(uriListMimeFormatC)))
+    if (!d->hasFormat("text/uri-list"_L1))
         return rc;
     const auto urls = d->urls();
     if (urls.isEmpty())

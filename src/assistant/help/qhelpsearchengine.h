@@ -5,53 +5,36 @@
 #define QHELPSEARCHENGINE_H
 
 #include <QtHelp/qhelp_global.h>
+#include <QtHelp/qhelpsearchresult.h>
 
-#include <QtCore/QMap>
-#include <QtCore/QUrl>
-#include <QtCore/QObject>
-#include <QtCore/QSharedDataPointer>
-#include <QtCore/QString>
-#include <QtCore/QStringList>
+#include <QtCore/qobject.h>
+#include <QtCore/qshareddata.h>
+#include <QtCore/qstringlist.h>
 
 QT_BEGIN_NAMESPACE
 
 class QHelpEngineCore;
-class QHelpSearchQueryWidget;
 class QHelpSearchEnginePrivate;
-class QHelpSearchResultData;
+class QHelpSearchQueryWidget;
 class QHelpSearchResultWidget;
 
+#if QT_DEPRECATED_SINCE(6, 7)
 class QHELP_EXPORT QHelpSearchQuery
 {
 public:
     enum FieldName { DEFAULT = 0, FUZZY, WITHOUT, PHRASE, ALL, ATLEAST };
 
+    QT_DEPRECATED_VERSION_X_6_7("Use QString instead")
     QHelpSearchQuery()
         : fieldName(DEFAULT) { wordList.clear(); }
+    QT_DEPRECATED_VERSION_X_6_7("Use QString instead")
     QHelpSearchQuery(FieldName field, const QStringList &wordList_)
         : fieldName(field), wordList(wordList_) {}
 
     FieldName fieldName;
     QStringList wordList;
 };
-
-class QHELP_EXPORT QHelpSearchResult
-{
-public:
-    QHelpSearchResult();
-    QHelpSearchResult(const QHelpSearchResult &other);
-    QHelpSearchResult(const QUrl &url, const QString &title, const QString &snippet);
-    ~QHelpSearchResult();
-
-    QHelpSearchResult &operator=(const QHelpSearchResult &other);
-
-    QString title() const;
-    QUrl url() const;
-    QString snippet() const;
-
-private:
-    QSharedDataPointer<QHelpSearchResultData> d;
-};
+#endif // QT_DEPRECATED_SINCE(6, 7)
 
 class QHELP_EXPORT QHelpSearchEngine : public QObject
 {
@@ -61,8 +44,8 @@ public:
     explicit QHelpSearchEngine(QHelpEngineCore *helpEngine, QObject *parent = nullptr);
     ~QHelpSearchEngine();
 
-    QHelpSearchQueryWidget* queryWidget();
-    QHelpSearchResultWidget* resultWidget();
+    QHelpSearchQueryWidget *queryWidget();
+    QHelpSearchResultWidget *resultWidget();
 
 #if QT_DEPRECATED_SINCE(5, 9)
     typedef QPair<QString, QString> SearchHit;
@@ -106,4 +89,4 @@ private:
 
 QT_END_NAMESPACE
 
-#endif  // QHELPSEARCHENGINE_H
+#endif // QHELPSEARCHENGINE_H

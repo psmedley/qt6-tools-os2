@@ -1,5 +1,5 @@
 // Copyright (C) 2016 The Qt Company Ltd.
-// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "helpgenerator.h"
 #include "qhelpprojectdata_p.h"
@@ -330,7 +330,7 @@ bool HelpGeneratorPrivate::insertFileNotFoundFile()
         " VALUES (0, '', ?, '')"));
     m_query->bindValue(0, fileId);
     if (fileId > -1 && m_query->exec()) {
-        m_fileMap.insert(QString(), fileId);
+        m_fileMap.insert({}, fileId);
         return true;
     }
     return false;

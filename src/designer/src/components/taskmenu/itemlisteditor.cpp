@@ -9,7 +9,7 @@
 
 #include <QtDesigner/abstractformwindow.h>
 
-#include <qttreepropertybrowser.h>
+#include <qttreepropertybrowser_p.h>
 
 #include <QtWidgets/qsplitter.h>
 #include <QtCore/qcoreapplication.h>
@@ -287,10 +287,10 @@ ItemListEditor::ItemListEditor(QDesignerFormWindowInterface *form, QWidget *pare
 
     setPropertyBrowserVisible(false);
 
-    QIcon upIcon = createIconSet(u"up.png"_s);
-    QIcon downIcon = createIconSet(u"down.png"_s);
-    QIcon minusIcon = createIconSet(u"minus.png"_s);
-    QIcon plusIcon = createIconSet(u"plus.png"_s);
+    QIcon upIcon = createIconSet("up.png"_L1);
+    QIcon downIcon = createIconSet("down.png"_L1);
+    QIcon minusIcon = createIconSet("minus.png"_L1);
+    QIcon plusIcon = createIconSet("plus.png"_L1);
     ui.moveListItemUpButton->setIcon(upIcon);
     ui.moveListItemDownButton->setIcon(downIcon);
     ui.newListItemButton->setIcon(plusIcon);

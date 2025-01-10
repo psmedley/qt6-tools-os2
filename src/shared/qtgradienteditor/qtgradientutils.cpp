@@ -1,8 +1,8 @@
 // Copyright (C) 2016 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
-#include "qtgradientutils.h"
-#include "qtgradientmanager.h"
+#include "qtgradientutils_p.h"
+#include "qtgradientmanager_p.h"
 #include <QtGui/QLinearGradient>
 #include <QtGui/QRadialGradient>
 #include <QtGui/QConicalGradient>
@@ -79,7 +79,7 @@ static QGradient::CoordinateMode stringToGradientCoordinateMode(const QString &n
     return QGradient::StretchToDeviceMode;
 }
 
-static QDomElement saveColor(QDomDocument &doc, const QColor &color)
+static QDomElement saveColor(QDomDocument &doc, QColor color)
 {
     QDomElement colorElem = doc.createElement("colorData"_L1);
 
@@ -156,7 +156,7 @@ static QGradientStop loadGradientStop(const QDomElement &elem)
         return QGradientStop();
 
     const qreal pos = static_cast<qreal>(elem.attribute("position"_L1).toDouble());
-    return qMakePair(pos, loadColor(elem.firstChild().toElement()));
+    return std::make_pair(pos, loadColor(elem.firstChild().toElement()));
 }
 
 static QGradient loadGradient(const QDomElement &elem)
@@ -243,7 +243,8 @@ void QtGradientUtils::restoreState(QtGradientManager *manager, const QString &st
     }
 }
 
-QPixmap QtGradientUtils::gradientPixmap(const QGradient &gradient, const QSize &size, bool checkeredBackground)
+QPixmap QtGradientUtils::gradientPixmap(const QGradient &gradient, QSize size,
+                                        bool checkeredBackground)
 {
     QImage image(size, QImage::Format_ARGB32);
     QPainter p(&image);

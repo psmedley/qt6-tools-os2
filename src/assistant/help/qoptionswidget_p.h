@@ -1,5 +1,5 @@
 // Copyright (C) 2020 The Qt Company Ltd.
-// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
 #ifndef QOPTIONSWIDGET_H
 #define QOPTIONSWIDGET_H
@@ -15,8 +15,8 @@
 // We mean it.
 //
 
-#include <QtWidgets/QWidget>
-#include <QtCore/QMap>
+#include <QtCore/qhash.h>
+#include <QtWidgets/qwidget.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -29,11 +29,10 @@ class QOptionsWidget : public QWidget
 public:
     QOptionsWidget(QWidget *parent = nullptr);
 
-    void clear();
-    void setOptions(const QStringList &validOptions,
-                    const QStringList &selectedOptions);
-    QStringList validOptions() const;
-    QStringList selectedOptions() const;
+    void clear() { setOptions({}, {}); }
+    void setOptions(const QStringList &validOptions, const QStringList &selectedOptions);
+    QStringList validOptions() const { return m_validOptions; }
+    QStringList selectedOptions() const { return m_selectedOptions; }
 
     void setNoOptionText(const QString &text);
     void setInvalidOptionText(const QString &text);
@@ -53,10 +52,10 @@ private:
     QStringList m_validOptions;
     QStringList m_invalidOptions;
     QStringList m_selectedOptions;
-    QMap<QString, QListWidgetItem *> m_optionToItem;
-    QMap<QListWidgetItem *, QString> m_itemToOption;
+    QHash<QString, QListWidgetItem *> m_optionToItem;
+    QHash<QListWidgetItem *, QString> m_itemToOption;
 };
 
 QT_END_NAMESPACE
 
-#endif  // OPTIONSWIDGET_H
+#endif // QOPTIONSWIDGET_H

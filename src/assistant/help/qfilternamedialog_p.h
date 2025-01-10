@@ -1,5 +1,5 @@
 // Copyright (C) 2020 The Qt Company Ltd.
-// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
 #ifndef QFILTERNAMEDIALOG_H
 #define QFILTERNAMEDIALOG_H
@@ -15,8 +15,9 @@
 // We mean it.
 //
 
-#include <QtWidgets/QDialog>
 #include "ui_qfilternamedialog.h"
+
+#include <QtWidgets/qdialog.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -28,7 +29,7 @@ public:
     QFilterNameDialog(QWidget *parent = nullptr);
 
     void setFilterName(const QString &filter);
-    QString filterName() const;
+    QString filterName() const { return m_ui.lineEdit->text(); }
 
 private slots:
     void updateOkButton();

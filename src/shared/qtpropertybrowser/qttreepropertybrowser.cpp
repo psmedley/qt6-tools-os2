@@ -1,13 +1,15 @@
 // Copyright (C) 2016 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
-#include "qttreepropertybrowser.h"
+#include "qttreepropertybrowser_p.h"
 
+#include <QtCore/QOperatingSystemVersion>
 #include <QtCore/QHash>
 #include <QtGui/QFocusEvent>
 #include <QtGui/QIcon>
 #include <QtGui/QPainter>
 #include <QtGui/QPalette>
+#include <QtGui/QStyleHints>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QHeaderView>
@@ -16,6 +18,15 @@
 #include <QtWidgets/QTreeWidget>
 
 QT_BEGIN_NAMESPACE
+
+using namespace Qt::StringLiterals;
+
+static constexpr bool isWindows = QOperatingSystemVersion::currentType() == QOperatingSystemVersion::Windows;
+
+static inline bool isLightTheme()
+{
+    return QGuiApplication::styleHints()->colorScheme() != Qt::ColorScheme::Dark;
+}
 
 class QtPropertyEditorView;
 
@@ -272,6 +283,8 @@ QWidget *QtPropertyEditorDelegate::createEditor(QWidget *parent,
             QWidget *editor = m_editorPrivate->createEditor(property, parent);
             if (editor) {
                 editor->setAutoFillBackground(true);
+                if (editor->palette().color(editor->backgroundRole()) == Qt::transparent)
+                    editor->setBackgroundRole(QPalette::Window);
                 editor->installEventFilter(const_cast<QtPropertyEditorDelegate *>(this));
                 connect(editor, &QObject::destroyed,
                         this, &QtPropertyEditorDelegate::slotEditorDestroyed);
@@ -313,7 +326,10 @@ void QtPropertyEditorDelegate::paint(QPainter *painter, const QStyleOptionViewIt
     QColor c;
     if (!hasValue && m_editorPrivate->markPropertiesWithoutValue()) {
         c = opt.palette.color(QPalette::Dark);
-        opt.palette.setColor(QPalette::Text, opt.palette.color(QPalette::BrightText));
+        // Hardcode "white" for Windows/light which is otherwise blue
+        const QColor textColor = isWindows && isLightTheme()
+            ? QColor(Qt::white) : opt.palette.color(QPalette::BrightText);
+        opt.palette.setColor(QPalette::Text, textColor);
     } else {
         c = m_editorPrivate->calculatedBackgroundColor(m_editorPrivate->indexToBrowserItem(index));
         if (c.isValid() && (opt.features & QStyleOptionViewItem::Alternate))
@@ -908,7 +924,7 @@ void QtTreePropertyBrowser::setItemVisible(QtBrowserItem *item, bool visible)
     \sa backgroundColor(), calculatedBackgroundColor()
 */
 
-void QtTreePropertyBrowser::setBackgroundColor(QtBrowserItem *item, const QColor &color)
+void QtTreePropertyBrowser::setBackgroundColor(QtBrowserItem *item, QColor color)
 {
     if (!d_ptr->m_indexToItem.contains(item))
         return;
@@ -1005,5 +1021,5 @@ void QtTreePropertyBrowser::editItem(QtBrowserItem *item)
 
 QT_END_NAMESPACE
 
-#include "moc_qttreepropertybrowser.cpp"
+#include "moc_qttreepropertybrowser_p.cpp"
 #include "qttreepropertybrowser.moc"

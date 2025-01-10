@@ -1,5 +1,5 @@
 // Copyright (C) 2020 The Qt Company Ltd.
-// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "helpdocsettings.h"
 
@@ -176,20 +176,17 @@ bool HelpDocSettings::applySettings(QHelpEngineCore *helpEngine,
                 settings.namespaceToFileName(),
                 oldSettings.namespaceToFileName());
 
-    bool changed = false;
-    for (const QString &namespaceName : docsToRemove.keys()) {
-        if (!helpEngine->unregisterDocumentation(namespaceName))
-            qWarning() << "Cannot unregister documentation:" << namespaceName;
-        changed = true;
+    for (auto it = docsToRemove.cbegin(); it != docsToRemove.cend(); ++it) {
+        if (!helpEngine->unregisterDocumentation(it.key()))
+            qWarning() << "Cannot unregister documentation:" << it.key();
     }
 
-    for (const QString &fileName : docsToAdd.values()) {
+    for (const QString &fileName : docsToAdd) {
         if (!helpEngine->registerDocumentation(fileName))
             qWarning() << "Cannot register documentation file:" << fileName;
-        changed = true;
     }
 
-    return changed;
+    return !docsToRemove.isEmpty() || !docsToAdd.isEmpty();
 }
 
 QT_END_NAMESPACE

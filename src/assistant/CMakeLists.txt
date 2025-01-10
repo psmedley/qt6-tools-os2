@@ -19,6 +19,7 @@ endif()
 add_subdirectory(help)
 add_subdirectory(assistant)
 add_subdirectory(qhelpgenerator)
+add_subdirectory(plugins)
 
 set(QLITEHTML_BIN_PATH ${INSTALL_BINDIR})
 set(QLITEHTML_LIBRARY_PATH ${INSTALL_LIBDIR})
@@ -43,11 +44,11 @@ if(TARGET qlitehtml)
         qt_disable_warnings(gumbo)
     endif()
     qt_disable_warnings(qlitehtml)
-    qt_handle_multi_config_output_dirs(qlitehtml)
     set_target_properties(qlitehtml PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${QT_BUILD_DIR}/${INSTALL_BINDIR}"
         LIBRARY_OUTPUT_DIRECTORY "${QT_BUILD_DIR}/${INSTALL_LIBDIR}"
         ARCHIVE_OUTPUT_DIRECTORY "${QT_BUILD_DIR}/${INSTALL_LIBDIR}")
+    qt_handle_multi_config_output_dirs(qlitehtml)
 else()
     message(FATAL_ERROR "qlitehtml not found. Did you run git submodule update --init --recursive?")
 endif()

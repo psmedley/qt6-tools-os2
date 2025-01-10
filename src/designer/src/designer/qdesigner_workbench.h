@@ -42,7 +42,7 @@ class QDesignerWorkbench: public QObject
     Q_OBJECT
 
 public:
-    QDesignerWorkbench();
+    explicit QDesignerWorkbench(const QStringList &pluginPaths);
     ~QDesignerWorkbench() override;
 
     UIMode mode() const;
@@ -86,6 +86,7 @@ public slots:
     void bringAllToFront();
     void toggleFormMinimizationState();
     void showNewForm();
+    void requestActivate();
 
 private slots:
     void switchToNeutralMode();
