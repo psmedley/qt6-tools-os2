@@ -1,0 +1,28 @@
+--- tests/auto/linguist/lupdate/tst_lupdate.cpp	2024-03-19 10:23:21.000000000 +1030
++++ tests/auto/linguist/lupdate/tst_lupdate.cpp	2024-11-21 14:03:58.000000000 +1030
+@@ -228,19 +256,19 @@
+     QTest::addColumn<QString>("directory");
+     QTest::addColumn<bool>("useClangCpp");
+ 
+-    QDir parsingDir(m_basePath + "good");
++    QDir parsingDir(m_basePath + "good"_L1);
+     QStringList dirs = parsingDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+ 
+ #ifndef Q_OS_WIN
+-    dirs.removeAll(QLatin1String("backslashes"));
++    dirs.removeAll("backslashes"_L1);
+ #endif
+ #ifndef Q_OS_MACOS
+-    dirs.removeAll(QLatin1String("parseobjc"));
++    dirs.removeAll("parseobjc"_L1);
+ #endif
+     QSet<QString> ignoredTests = {
+-        "lacksqobject_clang_parser", "parsecontexts_clang_parser", "parsecpp2_clang_parser",
+-        "parsecpp_clang_parser",     "prefix_clang_parser",        "preprocess_clang_parser",
+-        "parsecpp_clang_only"};
++        "lacksqobject_clang_parser"_L1, "parsecontexts_clang_parser"_L1, "parsecpp2_clang_parser"_L1,
++        "parsecpp_clang_parser"_L1,     "prefix_clang_parser"_L1,        "preprocess_clang_parser"_L1,
++        "parsecpp_clang_only"_L1};
+ 
+     // Add test rows for the "classic" lupdate
+     for (const QString &dir : dirs) {
