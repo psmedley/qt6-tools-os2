@@ -74,6 +74,12 @@ static void parseSourceFiles(
         sources.end()
     );
 
+    sources.erase(std::remove_if(sources.begin(), sources.end(),
+        [](const QString &source) {
+            return Utilities::isGeneratedFile(source);
+        }),
+        sources.end());
+
     auto qml_sources =
         std::stable_partition(sources.begin(), sources.end(), [](const QString& source){
             return CodeParser::parserForSourceFile(source) == CodeParser::parserForLanguage("QML");
@@ -543,9 +549,8 @@ static void processQdocconfFile(const QString &fileName)
 
         std::vector<QString> sources{};
         for (const auto &source : sourceList) {
-            if (source.contains(QLatin1String("doc/snippets")))
-                continue;
-            sources.emplace_back(source);
+            if (!source.contains(QLatin1String("doc/snippets")))
+                sources.emplace_back(source);
         }
         /*
           Find all the qdoc files in the example dirs, and add
@@ -554,7 +559,8 @@ static void processQdocconfFile(const QString &fileName)
         qCDebug(lcQdoc, "Reading exampledirs");
         QStringList exampleQdocList = config.getExampleQdocFiles(excludedDirs, excludedFiles);
         for (const auto &example : exampleQdocList) {
-            sources.emplace_back(example);
+            if (!example.contains(QLatin1String("doc/snippets")))
+                sources.emplace_back(example);
         }
 
         /*
